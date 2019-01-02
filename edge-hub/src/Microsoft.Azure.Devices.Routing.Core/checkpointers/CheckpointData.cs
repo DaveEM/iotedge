@@ -1,12 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 namespace Microsoft.Azure.Devices.Routing.Core.Checkpointers
 {
-    using Microsoft.Azure.Devices.Routing.Core.Util;
     using System;
+
+    using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public class CheckpointData
     {
-        public CheckpointData(long offset) : this(offset, Option.None<DateTime>(), Option.None<DateTime>())
+        public CheckpointData(long offset)
+            : this(offset, Option.None<DateTime>(), Option.None<DateTime>())
         {
         }
 
@@ -17,9 +19,9 @@ namespace Microsoft.Azure.Devices.Routing.Core.Checkpointers
             this.Offset = offset;
         }
 
-        public long Offset { get; }
-
         public Option<DateTime> LastFailedRevivalTime { get; }
+
+        public long Offset { get; }
 
         public Option<DateTime> UnhealthySince { get; }
     }

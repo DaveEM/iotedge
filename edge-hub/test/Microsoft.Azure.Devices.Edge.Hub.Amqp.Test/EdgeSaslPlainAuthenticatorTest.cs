@@ -3,10 +3,13 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
 {
     using System;
     using System.Security.Principal;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class EdgeSaslPlainAuthenticatorTest

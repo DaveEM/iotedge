@@ -4,8 +4,10 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
     using System;
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
+
     using RocksDbSharp;
 
     /// <summary>
@@ -48,23 +50,6 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
 
         public IEnumerable<string> ListColumnFamilies() => ListColumnFamilies(this.dbOptions, this.path);
 
-        static IEnumerable<string> ListColumnFamilies(DbOptions dbOptions, string path)
-        {
-            Preconditions.CheckNonWhiteSpace(path, nameof(path));
-            // ListColumnFamilies will throw if the DB doesn't exist yet, so wrap it in a try catch.
-            IEnumerable<string> columnFamilies = null;
-            try
-            {
-                columnFamilies = RocksDb.ListColumnFamilies(dbOptions, path);
-            }
-            catch
-            {
-                // ignored since ListColumnFamilies will throw if the DB doesn't exist yet.
-            }
-
-            return columnFamilies ?? Enumerable.Empty<string>();
-        }
-
         public ColumnFamilyHandle GetColumnFamily(string columnFamilyName) => this.db.GetColumnFamily(columnFamilyName);
 
         public ColumnFamilyHandle CreateColumnFamily(ColumnFamilyOptions columnFamilyOptions, string entityName) => this.db.CreateColumnFamily(columnFamilyOptions, entityName);
@@ -87,6 +72,23 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
             {
                 this.db?.Dispose();
             }
+        }
+
+        static IEnumerable<string> ListColumnFamilies(DbOptions dbOptions, string path)
+        {
+            Preconditions.CheckNonWhiteSpace(path, nameof(path));
+            // ListColumnFamilies will throw if the DB doesn't exist yet, so wrap it in a try catch.
+            IEnumerable<string> columnFamilies = null;
+            try
+            {
+                columnFamilies = RocksDb.ListColumnFamilies(dbOptions, path);
+            }
+            catch
+            {
+                // ignored since ListColumnFamilies will throw if the DB doesn't exist yet.
+            }
+
+            return columnFamilies ?? Enumerable.Empty<string>();
         }
     }
 }

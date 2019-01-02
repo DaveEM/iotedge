@@ -2,6 +2,7 @@
 namespace TemperatureFilter
 {
     using System;
+
     using Newtonsoft.Json;
 
     // NOTE: IF CHANGING ANYTHING IN THIS FILE, UPDATE MESSAGEBODY.CS IN SIMULATED TEMPERATURE SENSOR
@@ -27,11 +28,11 @@ namespace TemperatureFilter
     /// </summary>
     public class MessageBody
     {
-        [JsonProperty(PropertyName = "machine")]
-        public Machine Machine { get; set; }
-
         [JsonProperty(PropertyName = "ambient")]
         public Ambient Ambient { get; set; }
+
+        [JsonProperty(PropertyName = "machine")]
+        public Machine Machine { get; set; }
 
         [JsonProperty(PropertyName = "timeCreated")]
         public DateTime TimeCreated { get; set; }
@@ -39,19 +40,19 @@ namespace TemperatureFilter
 
     public class Machine
     {
-        [JsonProperty(PropertyName = "temperature")]
-        public double Temperature { get; set; }
-
         [JsonProperty(PropertyName = "pressure")]
         public double Pressure { get; set; }
+
+        [JsonProperty(PropertyName = "temperature")]
+        public double Temperature { get; set; }
     }
 
     public class Ambient
     {
-        [JsonProperty(PropertyName = "temperature")]
-        public double Temperature { get; set; }
-
         [JsonProperty(PropertyName = "humidity")]
         public int Humidity { get; set; }
+
+        [JsonProperty(PropertyName = "temperature")]
+        public double Temperature { get; set; }
     }
 }

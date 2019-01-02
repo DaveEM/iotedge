@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Common.Exceptions;
     using Microsoft.Azure.Devices.Edge.Agent.Core;
@@ -15,161 +16,21 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Shared;
+
     using Moq;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+
     using Xunit;
+
     using IotHubConnectionStringBuilder = Microsoft.Azure.Devices.IotHubConnectionStringBuilder;
     using ModuleClient = Microsoft.Azure.Devices.Edge.Agent.IoTHub.ModuleClient;
+    using ServiceClient = Microsoft.Azure.Devices.ServiceClient;
 
     public class EdgeAgentConnectionTest
     {
         const string DockerType = "docker";
-
-        [Integration]
-        [Fact]
-        public async Task EdgeAgentConnectionBasicTest()
-        {
-            string iotHubConnectionString = await SecretsHelper.GetSecretFromConfigKey("iotHubConnStrKey");
-            IotHubConnectionStringBuilder iotHubConnectionStringBuilder = IotHubConnectionStringBuilder.Create(iotHubConnectionString);
-            RegistryManager registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
-            await registryManager.OpenAsync();
-
-            string edgeDeviceId = "testMmaEdgeDevice1" + Guid.NewGuid().ToString();
-
-            var edgeDevice = new Device(edgeDeviceId)
-            {
-                Capabilities = new DeviceCapabilities { IotEdge = true },
-                Authentication = new AuthenticationMechanism() { Type = AuthenticationType.Sas }
-            };
-
-            try
-            {
-                edgeDevice = await registryManager.AddDeviceAsync(edgeDevice);
-
-                await SetAgentDesiredProperties(registryManager, edgeDeviceId);
-
-                string edgeAgentConnectionString = $"HostName={iotHubConnectionStringBuilder.HostName};DeviceId={edgeDeviceId};ModuleId=$edgeAgent;SharedAccessKey={edgeDevice.Authentication.SymmetricKey.PrimaryKey}";
-                IModuleClientProvider moduleClientProvider = new ModuleClientProvider(edgeAgentConnectionString, Option.None<UpstreamProtocol>(), Option.None<string>());
-
-                var moduleDeserializerTypes = new Dictionary<string, Type>
-                {
-                    { DockerType, typeof(DockerDesiredModule) }
-                };
-
-                var edgeAgentDeserializerTypes = new Dictionary<string, Type>
-                {
-                    { DockerType, typeof(EdgeAgentDockerModule) }
-                };
-
-                var edgeHubDeserializerTypes = new Dictionary<string, Type>
-                {
-                    { DockerType, typeof(EdgeHubDockerModule) }
-                };
-
-                var runtimeInfoDeserializerTypes = new Dictionary<string, Type>
-                {
-                    { DockerType, typeof(DockerRuntimeInfo) }
-                };
-
-                var deserializerTypes = new Dictionary<Type, IDictionary<string, Type>>
-                {
-                    [typeof(IModule)] = moduleDeserializerTypes,
-                    [typeof(IEdgeAgentModule)] = edgeAgentDeserializerTypes,
-                    [typeof(IEdgeHubModule)] = edgeHubDeserializerTypes,
-                    [typeof(IRuntimeInfo)] = runtimeInfoDeserializerTypes,
-                };
-
-                ISerde<DeploymentConfig> serde = new TypeSpecificSerDe<DeploymentConfig>(deserializerTypes);
-                IEdgeAgentConnection edgeAgentConnection = new EdgeAgentConnection(moduleClientProvider, serde);
-                await Task.Delay(TimeSpan.FromSeconds(10));
-
-                Option<DeploymentConfigInfo> deploymentConfigInfo = await edgeAgentConnection.GetDeploymentConfigInfoAsync();
-
-                Assert.True(deploymentConfigInfo.HasValue);
-                DeploymentConfig deploymentConfig = deploymentConfigInfo.OrDefault().DeploymentConfig;
-                Assert.NotNull(deploymentConfig);
-                Assert.NotNull(deploymentConfig.Modules);
-                Assert.NotNull(deploymentConfig.Runtime);
-                Assert.NotNull(deploymentConfig.SystemModules);
-                Assert.Equal(EdgeAgentConnection.ExpectedSchemaVersion.ToString(), deploymentConfig.SchemaVersion);
-                Assert.NotNull(deploymentConfig.SystemModules.EdgeAgent);
-                Assert.NotNull(deploymentConfig.SystemModules.EdgeHub);
-                Assert.Equal(1, deploymentConfig.Modules.Count);
-                Assert.NotNull(deploymentConfig.Modules["mongoserver"]);
-                ValidateRuntimeConfig(deploymentConfig.Runtime);
-                ValidateModules(deploymentConfig);
-
-                await UpdateAgentDesiredProperties(registryManager, edgeDeviceId);
-                await Task.Delay(TimeSpan.FromSeconds(10));
-
-                deploymentConfigInfo = await edgeAgentConnection.GetDeploymentConfigInfoAsync();
-
-                Assert.True(deploymentConfigInfo.HasValue);
-                deploymentConfig = deploymentConfigInfo.OrDefault().DeploymentConfig;
-                Assert.NotNull(deploymentConfig);
-                Assert.NotNull(deploymentConfig.Modules);
-                Assert.NotNull(deploymentConfig.Runtime);
-                Assert.NotNull(deploymentConfig.SystemModules);
-                Assert.Equal(EdgeAgentConnection.ExpectedSchemaVersion.ToString(), deploymentConfig.SchemaVersion);
-                Assert.NotNull(deploymentConfig.SystemModules.EdgeAgent);
-                Assert.NotNull(deploymentConfig.SystemModules.EdgeHub);
-                Assert.Equal(2, deploymentConfig.Modules.Count);
-                Assert.NotNull(deploymentConfig.Modules["mongoserver"]);
-                Assert.NotNull(deploymentConfig.Modules["mlModule"]);
-                ValidateRuntimeConfig(deploymentConfig.Runtime);
-            }
-            finally
-            {
-                try
-                {
-                    await registryManager.RemoveDeviceAsync(edgeDevice);
-                }
-                catch (Exception)
-                {
-                    // ignored
-                }
-            }
-        }
-
-        static void ValidateModules(DeploymentConfig deploymentConfig)
-        {
-            Assert.True(deploymentConfig.SystemModules.EdgeAgent.HasValue);
-            Assert.True(deploymentConfig.SystemModules.EdgeHub.HasValue);
-
-            var edgeAgent = deploymentConfig.SystemModules.EdgeAgent.OrDefault() as EdgeAgentDockerModule;
-            Assert.NotNull(edgeAgent);
-            Assert.Equal(edgeAgent.Env["e1"].Value, "e1val");
-            Assert.Equal(edgeAgent.Env["e2"].Value, "e2val");
-
-            var edgeHub = deploymentConfig.SystemModules.EdgeHub.OrDefault() as EdgeHubDockerModule;
-            Assert.NotNull(edgeHub);
-            Assert.Equal(edgeHub.Env["e3"].Value, "e3val");
-            Assert.Equal(edgeHub.Env["e4"].Value, "e4val");
-
-            var module1 = deploymentConfig.Modules["mongoserver"] as DockerDesiredModule;
-            Assert.NotNull(module1);
-            Assert.Equal(module1.Env["e5"].Value, "e5val");
-            Assert.Equal(module1.Env["e6"].Value, "e6val");
-        }
-
-        static void ValidateRuntimeConfig(IRuntimeInfo deploymentConfigRuntime)
-        {
-            var dockerRuntimeConfig = deploymentConfigRuntime as IRuntimeInfo<DockerRuntimeConfig>;
-            Assert.NotNull(dockerRuntimeConfig);
-
-            Assert.Null(dockerRuntimeConfig.Config.LoggingOptions);
-            Assert.Equal(2, dockerRuntimeConfig.Config.RegistryCredentials.Count);
-            RegistryCredentials r1 = dockerRuntimeConfig.Config.RegistryCredentials["r1"];
-            Assert.Equal("acr1.azure.net", r1.Address);
-            Assert.Equal("u1", r1.Username);
-            Assert.Equal("p1", r1.Password);
-
-            RegistryCredentials r2 = dockerRuntimeConfig.Config.RegistryCredentials["r2"];
-            Assert.Equal("acr2.azure.net", r2.Address);
-            Assert.Equal("u2", r2.Username);
-            Assert.Equal("p2", r2.Password);
-        }
 
         public static async Task SetAgentDesiredProperties(RegistryManager rm, string deviceId)
         {
@@ -281,11 +142,333 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
                     ["$edgeAgent"] = new Dictionary<string, object>
                     {
                         ["properties.desired"] = dp
-
                     }
                 }
             };
             await rm.ApplyConfigurationContentOnDeviceAsync(deviceId, cc);
+        }
+
+        public static async Task<Configuration> CreateConfigurationAsync(RegistryManager registryMananger, string configurationId, string targetCondition, int priority)
+        {
+            var configuration = new Configuration(configurationId)
+            {
+                Labels = new Dictionary<string, string>
+                {
+                    { "App", "Stream Analytics" }
+                },
+                Content = GetDefaultConfigurationContent(),
+                Priority = priority,
+                TargetCondition = targetCondition
+            };
+
+            return await registryMananger.AddConfigurationAsync(configuration);
+        }
+
+        public static async Task DeleteConfigurationAsync(RegistryManager registryManager, string configurationId)
+        {
+            await registryManager.RemoveConfigurationAsync(configurationId);
+        }
+
+        public static TwinCollection GetEdgeAgentReportedProperties(DeploymentConfigInfo deploymentConfigInfo)
+        {
+            DeploymentConfig deploymentConfig = deploymentConfigInfo.DeploymentConfig;
+            var reportedProperties = new
+            {
+                lastDesiredVersion = deploymentConfigInfo.Version,
+                lastDesiredStatus = new
+                {
+                    code = 200
+                },
+                runtime = new
+                {
+                    type = "docker"
+                },
+                systemModules = new
+                {
+                    edgeAgent = new
+                    {
+                        runtimeStatus = "running",
+                        description = "All good",
+                        configuration = new
+                        {
+                            id = deploymentConfig.SystemModules.EdgeAgent.OrDefault().ConfigurationInfo.Id
+                        }
+                    },
+                    edgeHub = new
+                    {
+                        runtimeStatus = "running",
+                        description = "All good",
+                        configuration = new
+                        {
+                            id = deploymentConfig.SystemModules.EdgeHub.OrDefault().ConfigurationInfo.Id
+                        }
+                    }
+                },
+                modules = new
+                {
+                    mongoserver = new
+                    {
+                        runtimeStatus = "running",
+                        description = "All good",
+                        configuration = new
+                        {
+                            id = deploymentConfig.Modules["mongoserver"].ConfigurationInfo.Id
+                        }
+                    },
+                    asa = new
+                    {
+                        runtimeStatus = "running",
+                        description = "All good",
+                        configuration = new
+                        {
+                            id = deploymentConfig.Modules["asa"].ConfigurationInfo.Id
+                        }
+                    }
+                }
+            };
+
+            string patch = JsonConvert.SerializeObject(reportedProperties);
+            return new TwinCollection(patch);
+        }
+
+        public static ConfigurationContent GetDefaultConfigurationContent()
+        {
+            return new ConfigurationContent
+            {
+                ModulesContent = new Dictionary<string, IDictionary<string, object>>
+                {
+                    ["$edgeAgent"] = new Dictionary<string, object>
+                    {
+                        ["properties.desired"] = GetEdgeAgentConfiguration()
+                    },
+                    ["$edgeHub"] = new Dictionary<string, object>
+                    {
+                        ["properties.desired"] = GetEdgeHubConfiguration()
+                    },
+                    ["mongoserver"] = new Dictionary<string, object>
+                    {
+                        ["properties.desired"] = GetTwinConfiguration("mongoserver")
+                    },
+                    ["asa"] = new Dictionary<string, object>
+                    {
+                        ["properties.desired"] = GetTwinConfiguration("asa")
+                    }
+                }
+            };
+        }
+
+        public static async Task UpdateAgentDesiredProperties(RegistryManager rm, string deviceId)
+        {
+            var dp = new
+            {
+                schemaVersion = "1.0",
+                runtime = new
+                {
+                    type = "docker",
+                    settings = new
+                    {
+                        registryCredentials = new
+                        {
+                            r1 = new
+                            {
+                                address = "acr1.azure.net",
+                                username = "u1",
+                                password = "p1"
+                            },
+                            r2 = new
+                            {
+                                address = "acr2.azure.net",
+                                username = "u2",
+                                password = "p2"
+                            }
+                        }
+                    }
+                },
+                systemModules = new
+                {
+                    edgeAgent = new
+                    {
+                        configuration = new
+                        {
+                            id = "1235"
+                        },
+                        type = "docker",
+                        settings = new
+                        {
+                            image = "edgeAgent",
+                            createOptions = ""
+                        }
+                    },
+                    edgeHub = new
+                    {
+                        type = "docker",
+                        status = "running",
+                        restartPolicy = "always",
+                        settings = new
+                        {
+                            image = "edgeHub",
+                            createOptions = ""
+                        }
+                    }
+                },
+                modules = new
+                {
+                    mongoserver = new
+                    {
+                        version = "1.0",
+                        type = "docker",
+                        status = "running",
+                        restartPolicy = "on-failure",
+                        env = new
+                        {
+                            e5 = new
+                            {
+                                value = "e5val"
+                            },
+                            e7 = new
+                            {
+                                value = "e7val"
+                            }
+                        },
+                        settings = new
+                        {
+                            image = "mongo",
+                            createOptions = ""
+                        }
+                    },
+                    mlModule = new
+                    {
+                        version = "1.0",
+                        type = "docker",
+                        status = "running",
+                        restartPolicy = "on-unhealthy",
+                        settings = new
+                        {
+                            image = "ml:latest",
+                            createOptions = ""
+                        }
+                    }
+                }
+            };
+
+            var cc = new ConfigurationContent
+            {
+                ModulesContent = new Dictionary<string, IDictionary<string, object>>
+                {
+                    ["$edgeAgent"] = new Dictionary<string, object>
+                    {
+                        ["properties.desired"] = dp
+                    }
+                }
+            };
+
+            await rm.ApplyConfigurationContentOnDeviceAsync(deviceId, cc);
+        }
+
+        [Integration]
+        [Fact]
+        public async Task EdgeAgentConnectionBasicTest()
+        {
+            string iotHubConnectionString = await SecretsHelper.GetSecretFromConfigKey("iotHubConnStrKey");
+            IotHubConnectionStringBuilder iotHubConnectionStringBuilder = IotHubConnectionStringBuilder.Create(iotHubConnectionString);
+            RegistryManager registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
+            await registryManager.OpenAsync();
+
+            string edgeDeviceId = "testMmaEdgeDevice1" + Guid.NewGuid().ToString();
+
+            var edgeDevice = new Device(edgeDeviceId)
+            {
+                Capabilities = new DeviceCapabilities { IotEdge = true },
+                Authentication = new AuthenticationMechanism() { Type = AuthenticationType.Sas }
+            };
+
+            try
+            {
+                edgeDevice = await registryManager.AddDeviceAsync(edgeDevice);
+
+                await SetAgentDesiredProperties(registryManager, edgeDeviceId);
+
+                string edgeAgentConnectionString = $"HostName={iotHubConnectionStringBuilder.HostName};DeviceId={edgeDeviceId};ModuleId=$edgeAgent;SharedAccessKey={edgeDevice.Authentication.SymmetricKey.PrimaryKey}";
+                IModuleClientProvider moduleClientProvider = new ModuleClientProvider(edgeAgentConnectionString, Option.None<UpstreamProtocol>(), Option.None<string>());
+
+                var moduleDeserializerTypes = new Dictionary<string, Type>
+                {
+                    { DockerType, typeof(DockerDesiredModule) }
+                };
+
+                var edgeAgentDeserializerTypes = new Dictionary<string, Type>
+                {
+                    { DockerType, typeof(EdgeAgentDockerModule) }
+                };
+
+                var edgeHubDeserializerTypes = new Dictionary<string, Type>
+                {
+                    { DockerType, typeof(EdgeHubDockerModule) }
+                };
+
+                var runtimeInfoDeserializerTypes = new Dictionary<string, Type>
+                {
+                    { DockerType, typeof(DockerRuntimeInfo) }
+                };
+
+                var deserializerTypes = new Dictionary<Type, IDictionary<string, Type>>
+                {
+                    [typeof(IModule)] = moduleDeserializerTypes,
+                    [typeof(IEdgeAgentModule)] = edgeAgentDeserializerTypes,
+                    [typeof(IEdgeHubModule)] = edgeHubDeserializerTypes,
+                    [typeof(IRuntimeInfo)] = runtimeInfoDeserializerTypes,
+                };
+
+                ISerde<DeploymentConfig> serde = new TypeSpecificSerDe<DeploymentConfig>(deserializerTypes);
+                IEdgeAgentConnection edgeAgentConnection = new EdgeAgentConnection(moduleClientProvider, serde);
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                Option<DeploymentConfigInfo> deploymentConfigInfo = await edgeAgentConnection.GetDeploymentConfigInfoAsync();
+
+                Assert.True(deploymentConfigInfo.HasValue);
+                DeploymentConfig deploymentConfig = deploymentConfigInfo.OrDefault().DeploymentConfig;
+                Assert.NotNull(deploymentConfig);
+                Assert.NotNull(deploymentConfig.Modules);
+                Assert.NotNull(deploymentConfig.Runtime);
+                Assert.NotNull(deploymentConfig.SystemModules);
+                Assert.Equal(EdgeAgentConnection.ExpectedSchemaVersion.ToString(), deploymentConfig.SchemaVersion);
+                Assert.NotNull(deploymentConfig.SystemModules.EdgeAgent);
+                Assert.NotNull(deploymentConfig.SystemModules.EdgeHub);
+                Assert.Equal(1, deploymentConfig.Modules.Count);
+                Assert.NotNull(deploymentConfig.Modules["mongoserver"]);
+                ValidateRuntimeConfig(deploymentConfig.Runtime);
+                ValidateModules(deploymentConfig);
+
+                await UpdateAgentDesiredProperties(registryManager, edgeDeviceId);
+                await Task.Delay(TimeSpan.FromSeconds(10));
+
+                deploymentConfigInfo = await edgeAgentConnection.GetDeploymentConfigInfoAsync();
+
+                Assert.True(deploymentConfigInfo.HasValue);
+                deploymentConfig = deploymentConfigInfo.OrDefault().DeploymentConfig;
+                Assert.NotNull(deploymentConfig);
+                Assert.NotNull(deploymentConfig.Modules);
+                Assert.NotNull(deploymentConfig.Runtime);
+                Assert.NotNull(deploymentConfig.SystemModules);
+                Assert.Equal(EdgeAgentConnection.ExpectedSchemaVersion.ToString(), deploymentConfig.SchemaVersion);
+                Assert.NotNull(deploymentConfig.SystemModules.EdgeAgent);
+                Assert.NotNull(deploymentConfig.SystemModules.EdgeHub);
+                Assert.Equal(2, deploymentConfig.Modules.Count);
+                Assert.NotNull(deploymentConfig.Modules["mongoserver"]);
+                Assert.NotNull(deploymentConfig.Modules["mlModule"]);
+                ValidateRuntimeConfig(deploymentConfig.Runtime);
+            }
+            finally
+            {
+                try
+                {
+                    await registryManager.RemoveDeviceAsync(edgeDevice);
+                }
+                catch (Exception)
+                {
+                    // ignored
+                }
+            }
         }
 
         [Integration]
@@ -408,317 +591,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             }
         }
 
-        public static async Task<Configuration> CreateConfigurationAsync(RegistryManager registryMananger, string configurationId, string targetCondition, int priority)
-        {
-            var configuration = new Configuration(configurationId)
-            {
-                Labels = new Dictionary<string, string>
-                {
-                    { "App", "Stream Analytics" }
-                },
-                Content = GetDefaultConfigurationContent(),
-                Priority = priority,
-                TargetCondition = targetCondition
-            };
-
-            return await registryMananger.AddConfigurationAsync(configuration);
-        }
-
-        public static async Task DeleteConfigurationAsync(RegistryManager registryManager, string configurationId)
-        {
-            await registryManager.RemoveConfigurationAsync(configurationId);
-        }
-
-        public static TwinCollection GetEdgeAgentReportedProperties(DeploymentConfigInfo deploymentConfigInfo)
-        {
-            DeploymentConfig deploymentConfig = deploymentConfigInfo.DeploymentConfig;
-            var reportedProperties = new
-            {
-                lastDesiredVersion = deploymentConfigInfo.Version,
-                lastDesiredStatus = new
-                {
-                    code = 200
-                },
-                runtime = new
-                {
-                    type = "docker"
-                },
-                systemModules = new
-                {
-                    edgeAgent = new
-                    {
-                        runtimeStatus = "running",
-                        description = "All good",
-                        configuration = new
-                        {
-                            id = deploymentConfig.SystemModules.EdgeAgent.OrDefault().ConfigurationInfo.Id
-                        }
-                    },
-                    edgeHub = new
-                    {
-                        runtimeStatus = "running",
-                        description = "All good",
-                        configuration = new
-                        {
-                            id = deploymentConfig.SystemModules.EdgeHub.OrDefault().ConfigurationInfo.Id
-                        }
-                    }
-                },
-                modules = new
-                {
-                    mongoserver = new
-                    {
-                        runtimeStatus = "running",
-                        description = "All good",
-                        configuration = new
-                        {
-                            id = deploymentConfig.Modules["mongoserver"].ConfigurationInfo.Id
-                        }
-                    },
-                    asa = new
-                    {
-                        runtimeStatus = "running",
-                        description = "All good",
-                        configuration = new
-                        {
-                            id = deploymentConfig.Modules["asa"].ConfigurationInfo.Id
-                        }
-                    }
-                }
-            };
-
-            string patch = JsonConvert.SerializeObject(reportedProperties);
-            return new TwinCollection(patch);
-        }
-
-        public static ConfigurationContent GetDefaultConfigurationContent()
-        {
-            return new ConfigurationContent
-            {
-                ModulesContent = new Dictionary<string, IDictionary<string, object>>
-                {
-                    ["$edgeAgent"] = new Dictionary<string, object>
-                    {
-                        ["properties.desired"] = GetEdgeAgentConfiguration()
-                    },
-                    ["$edgeHub"] = new Dictionary<string, object>
-                    {
-                        ["properties.desired"] = GetEdgeHubConfiguration()
-                    },
-                    ["mongoserver"] = new Dictionary<string, object>
-                    {
-                        ["properties.desired"] = GetTwinConfiguration("mongoserver")
-                    },
-                    ["asa"] = new Dictionary<string, object>
-                    {
-                        ["properties.desired"] = GetTwinConfiguration("asa")
-                    }
-                }
-            };
-        }
-
-        static object GetEdgeAgentConfiguration()
-        {
-            var desiredProperties = new
-            {
-                schemaVersion = "1.0",
-                runtime = new
-                {
-                    type = "docker",
-                    settings = new
-                    {
-                        loggingOptions = ""
-                    }
-                },
-                systemModules = new
-                {
-                    edgeAgent = new
-                    {
-                        type = "docker",
-                        settings = new
-                        {
-                            image = "edgeAgent",
-                            createOptions = ""
-                        }
-                    },
-                    edgeHub = new
-                    {
-                        type = "docker",
-                        status = "running",
-                        restartPolicy = "always",
-                        settings = new
-                        {
-                            image = "edgeHub",
-                            createOptions = ""
-                        }
-                    }
-                },
-                modules = new
-                {
-                    mongoserver = new
-                    {
-                        version = "1.0",
-                        type = "docker",
-                        status = "running",
-                        restartPolicy = "on-failure",
-                        settings = new
-                        {
-                            image = "mongo",
-                            createOptions = ""
-                        }
-                    },
-                    asa = new
-                    {
-                        version = "1.0",
-                        type = "docker",
-                        status = "running",
-                        restartPolicy = "on-failure",
-                        settings = new
-                        {
-                            image = "asa",
-                            createOptions = ""
-                        }
-                    }
-                }
-            };
-            return desiredProperties;
-        }
-
-        static object GetEdgeHubConfiguration()
-        {
-            var desiredProperties = new
-            {
-                schemaVersion = "1.0",
-                routes = new Dictionary<string, string>
-                {
-                    ["route1"] = "from /* INTO $upstream",
-                },
-                storeAndForwardConfiguration = new
-                {
-                    timeToLiveSecs = 20
-                }
-            };
-            return desiredProperties;
-        }
-
-        static object GetTwinConfiguration(string moduleName)
-        {
-            var desiredProperties = new
-            {
-                name = moduleName
-            };
-            return desiredProperties;
-        }
-
-        public static async Task UpdateAgentDesiredProperties(RegistryManager rm, string deviceId)
-        {
-            var dp = new
-            {
-                schemaVersion = "1.0",
-                runtime = new
-                {
-                    type = "docker",
-                    settings = new
-                    {
-                        registryCredentials = new
-                        {
-                            r1 = new
-                            {
-                                address = "acr1.azure.net",
-                                username = "u1",
-                                password = "p1"
-                            },
-                            r2 = new
-                            {
-                                address = "acr2.azure.net",
-                                username = "u2",
-                                password = "p2"
-                            }
-                        }
-                    }
-                },
-                systemModules = new
-                {
-                    edgeAgent = new
-                    {
-                        configuration = new
-                        {
-                            id = "1235"
-                        },
-                        type = "docker",
-                        settings = new
-                        {
-                            image = "edgeAgent",
-                            createOptions = ""
-                        }
-                    },
-                    edgeHub = new
-                    {
-                        type = "docker",
-                        status = "running",
-                        restartPolicy = "always",
-                        settings = new
-                        {
-                            image = "edgeHub",
-                            createOptions = ""
-                        }
-                    }
-                },
-                modules = new
-                {
-                    mongoserver = new
-                    {
-                        version = "1.0",
-                        type = "docker",
-                        status = "running",
-                        restartPolicy = "on-failure",
-                        env = new
-                        {
-                            e5 = new
-                            {
-                                value = "e5val"
-                            },
-                            e7 = new
-                            {
-                                value = "e7val"
-                            }
-                        },
-                        settings = new
-                        {
-                            image = "mongo",
-                            createOptions = ""
-                        }
-                    },
-                    mlModule = new
-                    {
-                        version = "1.0",
-                        type = "docker",
-                        status = "running",
-                        restartPolicy = "on-unhealthy",
-                        settings = new
-                        {
-                            image = "ml:latest",
-                            createOptions = ""
-                        }
-                    }
-                }
-            };
-
-            var cc = new ConfigurationContent
-            {
-                ModulesContent = new Dictionary<string, IDictionary<string, object>>
-                {
-                    ["$edgeAgent"] = new Dictionary<string, object>
-                    {
-                        ["properties.desired"] = dp
-
-                    }
-                }
-            };
-
-            await rm.ApplyConfigurationContentOnDeviceAsync(deviceId, cc);
-        }
-
         [Fact]
         [Unit]
         public async Task GetDeploymentConfigInfoAsyncReturnsConfigWhenThereAreNoErrors()
@@ -729,30 +601,33 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             var runtime = new Mock<IRuntimeInfo>();
             var edgeAgent = new Mock<IEdgeAgentModule>();
             var edgeHub = new Mock<IEdgeHubModule>();
-            Client.ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
+            ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
             var twin = new Twin
             {
                 Properties = new TwinProperties
                 {
-                    Desired = new TwinCollection(JObject.FromObject(new Dictionary<string, object>
-                    {
-                        { "$version", 10 },
+                    Desired = new TwinCollection(
+                        JObject.FromObject(
+                            new Dictionary<string, object>
+                            {
+                                { "$version", 10 },
 
-                        // This is here to prevent the "empty" twin error from being thrown.
-                        { "MoreStuff", "MoreStuffHereToo" }
-                    }).ToString()),
+                                // This is here to prevent the "empty" twin error from being thrown.
+                                { "MoreStuff", "MoreStuffHereToo" }
+                            }).ToString()),
                     Reported = new TwinCollection()
                 }
             };
             var deploymentConfig = new DeploymentConfig(
-                "1.0", runtime.Object,
+                "1.0",
+                runtime.Object,
                 new SystemModules(edgeAgent.Object, edgeHub.Object),
                 ImmutableDictionary<string, IModule>.Empty
             );
 
             var deviceClientProvider = new Mock<IModuleClientProvider>();
-            deviceClientProvider.Setup(d => d.Create(It.IsAny<Client.ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
-                .Callback<Client.ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
+            deviceClientProvider.Setup(d => d.Create(It.IsAny<ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
+                .Callback<ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
                 .ReturnsAsync(deviceClient.Object);
 
             deviceClient.Setup(d => d.GetTwinAsync())
@@ -779,25 +654,27 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             // Arrange
             var deviceClient = new Mock<IModuleClient>();
             var serde = new Mock<ISerde<DeploymentConfig>>();
-            Client.ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
+            ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
             var twin = new Twin
             {
                 Properties = new TwinProperties
                 {
-                    Desired = new TwinCollection(JObject.FromObject(new Dictionary<string, object>
-                    {
-                        { "$version", 10 },
+                    Desired = new TwinCollection(
+                        JObject.FromObject(
+                            new Dictionary<string, object>
+                            {
+                                { "$version", 10 },
 
-                        // This is here to prevent the "empty" twin error from being thrown.
-                        { "MoreStuff", "MoreStuffHereToo" }
-                    }).ToString()),
+                                // This is here to prevent the "empty" twin error from being thrown.
+                                { "MoreStuff", "MoreStuffHereToo" }
+                            }).ToString()),
                     Reported = new TwinCollection()
                 }
             };
 
             var deviceClientProvider = new Mock<IModuleClientProvider>();
-            deviceClientProvider.Setup(d => d.Create(It.IsAny<Client.ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
-                .Callback<Client.ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
+            deviceClientProvider.Setup(d => d.Create(It.IsAny<ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
+                .Callback<ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
                 .ReturnsAsync(deviceClient.Object);
 
             deviceClient.Setup(d => d.GetTwinAsync())
@@ -809,7 +686,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             // Act
             var connection = new EdgeAgentConnection(deviceClientProvider.Object, serde.Object);
             Assert.NotNull(connectionStatusChangesHandler);
-            connectionStatusChangesHandler.Invoke(Client.ConnectionStatus.Connected, Client.ConnectionStatusChangeReason.Connection_Ok);
+            connectionStatusChangesHandler.Invoke(ConnectionStatus.Connected, ConnectionStatusChangeReason.Connection_Ok);
 
             Option<DeploymentConfigInfo> deploymentConfigInfo = await connection.GetDeploymentConfigInfoAsync();
 
@@ -827,22 +704,24 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             var deviceClient = new Mock<IModuleClient>();
             var serde = new Mock<ISerde<DeploymentConfig>>();
 
-            Client.ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
+            ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
             var twin = new Twin
             {
                 Properties = new TwinProperties
                 {
-                    Desired = new TwinCollection(JObject.FromObject(new Dictionary<string, object>
-                    {
-                        { "$version", 10 }
-                    }).ToString()),
+                    Desired = new TwinCollection(
+                        JObject.FromObject(
+                            new Dictionary<string, object>
+                            {
+                                { "$version", 10 }
+                            }).ToString()),
                     Reported = new TwinCollection()
                 }
             };
 
             var deviceClientProvider = new Mock<IModuleClientProvider>();
-            deviceClientProvider.Setup(d => d.Create(It.IsAny<Client.ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
-                .Callback<Client.ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
+            deviceClientProvider.Setup(d => d.Create(It.IsAny<ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
+                .Callback<ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
                 .ReturnsAsync(deviceClient.Object);
 
             deviceClient.Setup(d => d.GetTwinAsync())
@@ -851,7 +730,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             // Act
             var connection = new EdgeAgentConnection(deviceClientProvider.Object, serde.Object);
             Assert.NotNull(connectionStatusChangesHandler);
-            connectionStatusChangesHandler.Invoke(Client.ConnectionStatus.Connected, Client.ConnectionStatusChangeReason.Connection_Ok);
+            connectionStatusChangesHandler.Invoke(ConnectionStatus.Connected, ConnectionStatusChangeReason.Connection_Ok);
 
             Option<DeploymentConfigInfo> deploymentConfigInfo = await connection.GetDeploymentConfigInfoAsync();
 
@@ -871,37 +750,40 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             var runtime = new Mock<IRuntimeInfo>();
             var edgeAgent = new Mock<IEdgeAgentModule>();
             var edgeHub = new Mock<IEdgeHubModule>();
-            Client.ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
+            ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
             var twin = new Twin
             {
                 Properties = new TwinProperties
                 {
-                    Desired = new TwinCollection(JObject.FromObject(new Dictionary<string, object>
-                    {
-                        { "$version", 10 },
+                    Desired = new TwinCollection(
+                        JObject.FromObject(
+                            new Dictionary<string, object>
+                            {
+                                { "$version", 10 },
 
-                        // This is here to prevent the "empty" twin error from being thrown.
-                        { "MoreStuff", "MoreStuffHereToo" }
-                    }).ToString()),
+                                // This is here to prevent the "empty" twin error from being thrown.
+                                { "MoreStuff", "MoreStuffHereToo" }
+                            }).ToString()),
                     Reported = new TwinCollection()
                 }
             };
             var deploymentConfig = new DeploymentConfig(
-                "InvalidSchemaVersion", runtime.Object,
+                "InvalidSchemaVersion",
+                runtime.Object,
                 new SystemModules(edgeAgent.Object, edgeHub.Object),
                 ImmutableDictionary<string, IModule>.Empty
             );
 
             var deviceClientProvider = new Mock<IModuleClientProvider>();
-            deviceClientProvider.Setup(d => d.Create(It.IsAny<Client.ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
-                .Callback<Client.ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
+            deviceClientProvider.Setup(d => d.Create(It.IsAny<ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
+                .Callback<ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
                 .ReturnsAsync(deviceClient.Object);
 
             deviceClient.Setup(d => d.GetTwinAsync())
                 .ReturnsAsync(twin);
-            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<Client.DesiredPropertyUpdateCallback>()))
+            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<DesiredPropertyUpdateCallback>()))
                 .Returns(Task.CompletedTask);
-            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<Client.MethodCallback>()))
+            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<MethodCallback>()))
                 .Returns(Task.CompletedTask);
 
             serde.Setup(s => s.Deserialize(It.IsAny<string>()))
@@ -910,7 +792,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             // Act
             var connection = new EdgeAgentConnection(deviceClientProvider.Object, serde.Object);
             Assert.NotNull(connectionStatusChangesHandler);
-            connectionStatusChangesHandler.Invoke(Client.ConnectionStatus.Connected, Client.ConnectionStatusChangeReason.Connection_Ok);
+            connectionStatusChangesHandler.Invoke(ConnectionStatus.Connected, ConnectionStatusChangeReason.Connection_Ok);
             Option<DeploymentConfigInfo> deploymentConfigInfo = await connection.GetDeploymentConfigInfoAsync();
 
             // Assert
@@ -930,42 +812,44 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             var edgeAgent = new Mock<IEdgeAgentModule>();
             var edgeHub = new Mock<IEdgeHubModule>();
             var retryStrategy = new Mock<RetryStrategy>(new object[] { false });
-            Client.ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
+            ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
 
             var deploymentConfig = new DeploymentConfig(
-                "1.0", runtime.Object,
+                "1.0",
+                runtime.Object,
                 new SystemModules(edgeAgent.Object, edgeHub.Object),
                 ImmutableDictionary<string, IModule>.Empty
             );
 
             var deviceClientProvider = new Mock<IModuleClientProvider>();
-            deviceClientProvider.Setup(d => d.Create(It.IsAny<Client.ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
-                .Callback<Client.ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
+            deviceClientProvider.Setup(d => d.Create(It.IsAny<ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
+                .Callback<ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
                 .ReturnsAsync(deviceClient.Object);
 
             deviceClient.Setup(d => d.GetTwinAsync())
                 .ThrowsAsync(new InvalidOperationException());
-            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<Client.DesiredPropertyUpdateCallback>()))
+            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<DesiredPropertyUpdateCallback>()))
                 .Returns(Task.CompletedTask);
-            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<Client.MethodCallback>()))
+            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<MethodCallback>()))
                 .Returns(Task.CompletedTask);
 
             serde.Setup(s => s.Deserialize(It.IsAny<string>()))
                 .Returns(deploymentConfig);
 
             retryStrategy.Setup(rs => rs.GetShouldRetry())
-                .Returns((int retryCount, Exception lastException, out TimeSpan delay) =>
-                {
-                    delay = TimeSpan.Zero;
-                    return false;
-                });
+                .Returns(
+                    (int retryCount, Exception lastException, out TimeSpan delay) =>
+                    {
+                        delay = TimeSpan.Zero;
+                        return false;
+                    });
 
             // Act
             IEdgeAgentConnection connection = new EdgeAgentConnection(deviceClientProvider.Object, serde.Object, retryStrategy.Object, TimeSpan.FromHours(1));
             Assert.NotNull(connectionStatusChangesHandler);
             connectionStatusChangesHandler.Invoke(
-                Client.ConnectionStatus.Connected,
-                Client.ConnectionStatusChangeReason.Connection_Ok
+                ConnectionStatus.Connected,
+                ConnectionStatusChangeReason.Connection_Ok
             );
             Option<DeploymentConfigInfo> deploymentConfigInfo = await connection.GetDeploymentConfigInfoAsync();
 
@@ -986,49 +870,53 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             var edgeAgent = new Mock<IEdgeAgentModule>();
             var edgeHub = new Mock<IEdgeHubModule>();
             var retryStrategy = new Mock<RetryStrategy>(new object[] { false });
-            Client.ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
+            ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
 
             var deploymentConfig = new DeploymentConfig(
-                "1.0", runtime.Object,
+                "1.0",
+                runtime.Object,
                 new SystemModules(edgeAgent.Object, edgeHub.Object),
                 ImmutableDictionary<string, IModule>.Empty
             );
 
             var deviceClientProvider = new Mock<IModuleClientProvider>();
-            deviceClientProvider.Setup(d => d.Create(It.IsAny<Client.ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
-                .Callback<Client.ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
+            deviceClientProvider.Setup(d => d.Create(It.IsAny<ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
+                .Callback<ConnectionStatusChangesHandler, Func<ModuleClient, Task>>((statusChanges, x) => connectionStatusChangesHandler = statusChanges)
                 .ReturnsAsync(deviceClient.Object);
 
             serde.Setup(s => s.Deserialize(It.IsAny<string>()))
                 .Returns(deploymentConfig);
 
             retryStrategy.SetupSequence(rs => rs.GetShouldRetry())
-                .Returns((int retryCount, Exception lastException, out TimeSpan delay) =>
-                {
-                    delay = TimeSpan.Zero;
-                    return true;
-                });
+                .Returns(
+                    (int retryCount, Exception lastException, out TimeSpan delay) =>
+                    {
+                        delay = TimeSpan.Zero;
+                        return true;
+                    });
 
             var twin = new Twin
             {
                 Properties = new TwinProperties
                 {
-                    Desired = new TwinCollection(JObject.FromObject(new Dictionary<string, object>
-                    {
-                        { "$version", 10 },
+                    Desired = new TwinCollection(
+                        JObject.FromObject(
+                            new Dictionary<string, object>
+                            {
+                                { "$version", 10 },
 
-                        // This is here to prevent the "empty" twin error from being thrown.
-                        { "MoreStuff", "MoreStuffHereToo" }
-                    }).ToString()),
+                                // This is here to prevent the "empty" twin error from being thrown.
+                                { "MoreStuff", "MoreStuffHereToo" }
+                            }).ToString()),
                     Reported = new TwinCollection()
                 }
             };
             deviceClient.SetupSequence(d => d.GetTwinAsync())
                 .ThrowsAsync(new InvalidOperationException())
                 .ReturnsAsync(twin);
-            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<Client.DesiredPropertyUpdateCallback>()))
+            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<DesiredPropertyUpdateCallback>()))
                 .Returns(Task.CompletedTask);
-            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<Client.MethodCallback>()))
+            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<MethodCallback>()))
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -1052,49 +940,52 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             var runtime = new Mock<IRuntimeInfo>();
             var edgeAgent = new Mock<IEdgeAgentModule>();
             var edgeHub = new Mock<IEdgeHubModule>();
-            Client.ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
-            Client.DesiredPropertyUpdateCallback desiredPropertyUpdateCallback = null;
+            ConnectionStatusChangesHandler connectionStatusChangesHandler = null;
+            DesiredPropertyUpdateCallback desiredPropertyUpdateCallback = null;
             Func<IModuleClient, Task> initializeCallback = null;
             var twin = new Twin
             {
                 Properties = new TwinProperties
                 {
-                    Desired = new TwinCollection(JObject.FromObject(new Dictionary<string, object>
-                    {
-                        { "$version", 10 },
+                    Desired = new TwinCollection(
+                        JObject.FromObject(
+                            new Dictionary<string, object>
+                            {
+                                { "$version", 10 },
 
-                        // This is here to prevent the "empty" twin error from being thrown.
-                        { "MoreStuff", "MoreStuffHereToo" }
-                    }).ToString()),
+                                // This is here to prevent the "empty" twin error from being thrown.
+                                { "MoreStuff", "MoreStuffHereToo" }
+                            }).ToString()),
                     Reported = new TwinCollection()
                 }
             };
             var deploymentConfig = new DeploymentConfig(
-                "1.0", runtime.Object,
+                "1.0",
+                runtime.Object,
                 new SystemModules(edgeAgent.Object, edgeHub.Object),
                 ImmutableDictionary<string, IModule>.Empty
             );
 
             var deviceClientProvider = new Mock<IModuleClientProvider>();
-            deviceClientProvider.Setup(d => d.Create(It.IsAny<Client.ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
-                .Callback<Client.ConnectionStatusChangesHandler, Func<IModuleClient, Task>>(
-                (statusChanges, callback) =>
-                {
-                    connectionStatusChangesHandler = statusChanges;
-                    initializeCallback = callback;
-                })
+            deviceClientProvider.Setup(d => d.Create(It.IsAny<ConnectionStatusChangesHandler>(), It.IsAny<Func<IModuleClient, Task>>()))
+                .Callback<ConnectionStatusChangesHandler, Func<IModuleClient, Task>>(
+                    (statusChanges, callback) =>
+                    {
+                        connectionStatusChangesHandler = statusChanges;
+                        initializeCallback = callback;
+                    })
                 .ReturnsAsync(deviceClient.Object);
 
             deviceClient.Setup(d => d.GetTwinAsync())
-                    .ReturnsAsync(twin);
-            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<Client.DesiredPropertyUpdateCallback>()))
-                    .Callback<Client.DesiredPropertyUpdateCallback>(p => desiredPropertyUpdateCallback = p)
-                    .Returns(Task.CompletedTask);
-            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<Client.MethodCallback>()))
-                    .Returns(Task.CompletedTask);
+                .ReturnsAsync(twin);
+            deviceClient.Setup(d => d.SetDesiredPropertyUpdateCallbackAsync(It.IsAny<DesiredPropertyUpdateCallback>()))
+                .Callback<DesiredPropertyUpdateCallback>(p => desiredPropertyUpdateCallback = p)
+                .Returns(Task.CompletedTask);
+            deviceClient.Setup(d => d.SetMethodHandlerAsync(It.IsAny<string>(), It.IsAny<MethodCallback>()))
+                .Returns(Task.CompletedTask);
 
             serde.Setup(s => s.Deserialize(It.IsAny<string>()))
-                    .Returns(deploymentConfig);
+                .Returns(deploymentConfig);
 
             var connection = new EdgeAgentConnection(deviceClientProvider.Object, serde.Object);
 
@@ -1102,17 +993,19 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
 
             // this will cause the initial desired props to get set in the connection object
             Assert.NotNull(connectionStatusChangesHandler);
-            connectionStatusChangesHandler.Invoke(Client.ConnectionStatus.Connected, Client.ConnectionStatusChangeReason.Connection_Ok);
+            connectionStatusChangesHandler.Invoke(ConnectionStatus.Connected, ConnectionStatusChangeReason.Connection_Ok);
 
             Assert.NotNull(initializeCallback);
             await initializeCallback(deviceClient.Object);
 
             // Act
             // now send a patch update
-            var patch = new TwinCollection(JObject.FromObject(new Dictionary<string, object>
-            {
-                { "$version", 11 }
-            }).ToString());
+            var patch = new TwinCollection(
+                JObject.FromObject(
+                    new Dictionary<string, object>
+                    {
+                        { "$version", 11 }
+                    }).ToString());
             await desiredPropertyUpdateCallback.Invoke(patch, null);
 
             Option<DeploymentConfigInfo> deploymentConfigInfo = await connection.GetDeploymentConfigInfoAsync();
@@ -1268,7 +1161,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
                 };
 
                 ISerde<DeploymentConfig> serde = new TypeSpecificSerDe<DeploymentConfig>(deserializerTypes);
-                Devices.ServiceClient serviceClient = Devices.ServiceClient.CreateFromConnectionString(iotHubConnectionString);
+                ServiceClient serviceClient = ServiceClient.CreateFromConnectionString(iotHubConnectionString);
 
                 // Assert
                 await Assert.ThrowsAsync<DeviceNotFoundException>(() => serviceClient.InvokeDeviceMethodAsync(edgeDeviceId, Constants.EdgeAgentModuleIdentityName, new CloudToDeviceMethod("ping")));
@@ -1339,8 +1232,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
 
             var runtimeInfo = new DockerRuntimeInfo("docker", new DockerRuntimeConfig("1.0", null));
             var edgeAgentDockerModule = new EdgeAgentDockerModule("docker", new DockerConfig("image", ""), null, null);
-            var edgeHubDockerModule = new EdgeHubDockerModule("docker", ModuleStatus.Running, RestartPolicy.Always,
-                new DockerConfig("image", ""), null, null);
+            var edgeHubDockerModule = new EdgeHubDockerModule(
+                "docker",
+                ModuleStatus.Running,
+                RestartPolicy.Always,
+                new DockerConfig("image", ""),
+                null,
+                null);
             var deploymentConfig = new DeploymentConfig(
                 "1.0",
                 runtimeInfo,
@@ -1404,8 +1302,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
 
             var runtimeInfo = new DockerRuntimeInfo("docker", new DockerRuntimeConfig("1.0", null));
             var edgeAgentDockerModule = new EdgeAgentDockerModule("docker", new DockerConfig("image", ""), null, null);
-            var edgeHubDockerModule = new EdgeHubDockerModule("docker", ModuleStatus.Running, RestartPolicy.Always,
-                new DockerConfig("image", ""), null, null);
+            var edgeHubDockerModule = new EdgeHubDockerModule(
+                "docker",
+                ModuleStatus.Running,
+                RestartPolicy.Always,
+                new DockerConfig("image", ""),
+                null,
+                null);
             var deploymentConfig = new DeploymentConfig(
                 "1.0",
                 runtimeInfo,
@@ -1475,6 +1378,138 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             {
                 EdgeAgentConnection.ValidateSchemaVersion(schemaVersion);
             }
+        }
+
+        static void ValidateModules(DeploymentConfig deploymentConfig)
+        {
+            Assert.True(deploymentConfig.SystemModules.EdgeAgent.HasValue);
+            Assert.True(deploymentConfig.SystemModules.EdgeHub.HasValue);
+
+            var edgeAgent = deploymentConfig.SystemModules.EdgeAgent.OrDefault() as EdgeAgentDockerModule;
+            Assert.NotNull(edgeAgent);
+            Assert.Equal(edgeAgent.Env["e1"].Value, "e1val");
+            Assert.Equal(edgeAgent.Env["e2"].Value, "e2val");
+
+            var edgeHub = deploymentConfig.SystemModules.EdgeHub.OrDefault() as EdgeHubDockerModule;
+            Assert.NotNull(edgeHub);
+            Assert.Equal(edgeHub.Env["e3"].Value, "e3val");
+            Assert.Equal(edgeHub.Env["e4"].Value, "e4val");
+
+            var module1 = deploymentConfig.Modules["mongoserver"] as DockerDesiredModule;
+            Assert.NotNull(module1);
+            Assert.Equal(module1.Env["e5"].Value, "e5val");
+            Assert.Equal(module1.Env["e6"].Value, "e6val");
+        }
+
+        static void ValidateRuntimeConfig(IRuntimeInfo deploymentConfigRuntime)
+        {
+            var dockerRuntimeConfig = deploymentConfigRuntime as IRuntimeInfo<DockerRuntimeConfig>;
+            Assert.NotNull(dockerRuntimeConfig);
+
+            Assert.Null(dockerRuntimeConfig.Config.LoggingOptions);
+            Assert.Equal(2, dockerRuntimeConfig.Config.RegistryCredentials.Count);
+            RegistryCredentials r1 = dockerRuntimeConfig.Config.RegistryCredentials["r1"];
+            Assert.Equal("acr1.azure.net", r1.Address);
+            Assert.Equal("u1", r1.Username);
+            Assert.Equal("p1", r1.Password);
+
+            RegistryCredentials r2 = dockerRuntimeConfig.Config.RegistryCredentials["r2"];
+            Assert.Equal("acr2.azure.net", r2.Address);
+            Assert.Equal("u2", r2.Username);
+            Assert.Equal("p2", r2.Password);
+        }
+
+        static object GetEdgeAgentConfiguration()
+        {
+            var desiredProperties = new
+            {
+                schemaVersion = "1.0",
+                runtime = new
+                {
+                    type = "docker",
+                    settings = new
+                    {
+                        loggingOptions = ""
+                    }
+                },
+                systemModules = new
+                {
+                    edgeAgent = new
+                    {
+                        type = "docker",
+                        settings = new
+                        {
+                            image = "edgeAgent",
+                            createOptions = ""
+                        }
+                    },
+                    edgeHub = new
+                    {
+                        type = "docker",
+                        status = "running",
+                        restartPolicy = "always",
+                        settings = new
+                        {
+                            image = "edgeHub",
+                            createOptions = ""
+                        }
+                    }
+                },
+                modules = new
+                {
+                    mongoserver = new
+                    {
+                        version = "1.0",
+                        type = "docker",
+                        status = "running",
+                        restartPolicy = "on-failure",
+                        settings = new
+                        {
+                            image = "mongo",
+                            createOptions = ""
+                        }
+                    },
+                    asa = new
+                    {
+                        version = "1.0",
+                        type = "docker",
+                        status = "running",
+                        restartPolicy = "on-failure",
+                        settings = new
+                        {
+                            image = "asa",
+                            createOptions = ""
+                        }
+                    }
+                }
+            };
+            return desiredProperties;
+        }
+
+        static object GetEdgeHubConfiguration()
+        {
+            var desiredProperties = new
+            {
+                schemaVersion = "1.0",
+                routes = new Dictionary<string, string>
+                {
+                    ["route1"] = "from /* INTO $upstream",
+                },
+                storeAndForwardConfiguration = new
+                {
+                    timeToLiveSecs = 20
+                }
+            };
+            return desiredProperties;
+        }
+
+        static object GetTwinConfiguration(string moduleName)
+        {
+            var desiredProperties = new
+            {
+                name = moduleName
+            };
+            return desiredProperties;
         }
     }
 }

@@ -9,11 +9,12 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Routing.Core.Checkpointers;
     using Microsoft.Azure.Devices.Routing.Core.Util;
+    using Microsoft.Azure.Devices.Routing.Core.Util.Concurrency;
     using Microsoft.Extensions.Logging;
-    using AsyncLock = Microsoft.Azure.Devices.Routing.Core.Util.Concurrency.AsyncLock;
 
     public class EndpointExecutorFsm : IDisposable
     {
@@ -35,81 +36,16 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
         readonly AsyncLock sync = new AsyncLock();
         readonly ISystemTime systemTime;
 
-        public Endpoint Endpoint => this.processor.Endpoint;
-
-        public ICheckpointer Checkpointer { get; }
-
-        public EndpointExecutorStatus Status =>
-            new EndpointExecutorStatus(this.Endpoint.Id, this.state, this.retryAttempts, this.retryPeriod, this.lastFailedRevivalTime, this.unhealthySince, new CheckpointerStatus(this.Checkpointer.Id, this.Checkpointer.Offset, this.Checkpointer.Proposed));
-
-        public EndpointExecutorFsm(Endpoint endpoint, ICheckpointer checkpointer, EndpointExecutorConfig config)
-            : this(endpoint, checkpointer, config, SystemTime.Instance)
-        {
-        }
-
-        public EndpointExecutorFsm(Endpoint endpoint, ICheckpointer checkpointer, EndpointExecutorConfig config, ISystemTime systemTime)
-        {
-            this.processor = Preconditions.CheckNotNull(endpoint).CreateProcessor();
-            this.Checkpointer = Preconditions.CheckNotNull(checkpointer);
-            this.config = Preconditions.CheckNotNull(config);
-            this.systemTime = Preconditions.CheckNotNull(systemTime);
-            this.retryTimer = new Timer(this.RetryAsync, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-            this.retryPeriod = Timeout.InfiniteTimeSpan;
-            this.lastFailedRevivalTime = checkpointer.LastFailedRevivalTime;
-            this.unhealthySince = checkpointer.UnhealthySince;
-
-            if (checkpointer.LastFailedRevivalTime.HasValue)
-            {
-                this.state = State.DeadIdle;
-                this.retryAttempts = short.MaxValue; // setting to some big value
-            }
-            else
-            {
-                this.state = State.Idle;
-            }
-        }
-
-        public async Task RunAsync(ICommand command)
-        {
-            using (await this.sync.LockAsync())
-            {
-                await RunInternalAsync(this, command);
-            }
-        }
-
-        public Task CloseAsync() => this.RunAsync(Commands.Close);
-
-        public void Dispose() => this.Dispose(true);
-
-        protected virtual void Dispose(bool disposing)
-        {
-            //Debug.Assert(this.state == State.Closed);
-            if (disposing)
-            {
-                this.Checkpointer.Dispose();
-                this.retryTimer.Dispose();
-                this.sync.Dispose();
-            }
-        }
-
-        bool ShouldRetry(Exception exception, out TimeSpan retryAfter)
-        {
-            retryAfter = TimeSpan.Zero;
-            ITransientErrorDetectionStrategy detectionStrategy = this.processor.ErrorDetectionStrategy;
-            ShouldRetry shouldRetry = this.config.RetryStrategy.GetShouldRetry();
-            return detectionStrategy.IsTransient(exception) && shouldRetry(this.retryAttempts, exception, out retryAfter);
-        }
-
         static readonly IReadOnlyDictionary<State, StateActions> Actions = new Dictionary<State, StateActions>
         {
-            { State.Idle,               new StateActions(EnterIdleAsync,              StateActions.NullAction) },
-            { State.Sending,            new StateActions(EnterSendingAsync,           StateActions.NullAction) },
-            { State.Checkpointing,      new StateActions(EnterCheckpointingAsync,     StateActions.NullAction) },
-            { State.Failing,            new StateActions(EnterFailingAsync,           ExitFailingAsync) },
-            { State.DeadCheckpointing,  new StateActions(EnterDeadCheckpointingAsync, ExitDeadCheckpointingAsync) },
-            { State.DeadIdle,           new StateActions(StateActions.NullAction,     StateActions.NullAction) },
-            { State.DeadProcess,        new StateActions(EnterProcessDeadAsync,       StateActions.NullAction) },
-            { State.Closed,             new StateActions(EnterClosedAsync,            StateActions.NullAction) }
+            { State.Idle, new StateActions(EnterIdleAsync, StateActions.NullAction) },
+            { State.Sending, new StateActions(EnterSendingAsync, StateActions.NullAction) },
+            { State.Checkpointing, new StateActions(EnterCheckpointingAsync, StateActions.NullAction) },
+            { State.Failing, new StateActions(EnterFailingAsync, ExitFailingAsync) },
+            { State.DeadCheckpointing, new StateActions(EnterDeadCheckpointingAsync, ExitDeadCheckpointingAsync) },
+            { State.DeadIdle, new StateActions(StateActions.NullAction, StateActions.NullAction) },
+            { State.DeadProcess, new StateActions(EnterProcessDeadAsync, StateActions.NullAction) },
+            { State.Closed, new StateActions(EnterClosedAsync, StateActions.NullAction) }
         };
 
         static readonly IReadOnlyDictionary<StateCommandPair, StateTransition> Transitions = new Dictionary<StateCommandPair, StateTransition>
@@ -152,8 +88,64 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
 
             // Closed
             { new StateCommandPair(State.Closed, CommandType.SendMessage), new StateTransition(State.Closed, SendMessageClosedAsync) },
-
         };
+
+        public EndpointExecutorFsm(Endpoint endpoint, ICheckpointer checkpointer, EndpointExecutorConfig config)
+            : this(endpoint, checkpointer, config, SystemTime.Instance)
+        {
+        }
+
+        public EndpointExecutorFsm(Endpoint endpoint, ICheckpointer checkpointer, EndpointExecutorConfig config, ISystemTime systemTime)
+        {
+            this.processor = Preconditions.CheckNotNull(endpoint).CreateProcessor();
+            this.Checkpointer = Preconditions.CheckNotNull(checkpointer);
+            this.config = Preconditions.CheckNotNull(config);
+            this.systemTime = Preconditions.CheckNotNull(systemTime);
+            this.retryTimer = new Timer(this.RetryAsync, null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+            this.retryPeriod = Timeout.InfiniteTimeSpan;
+            this.lastFailedRevivalTime = checkpointer.LastFailedRevivalTime;
+            this.unhealthySince = checkpointer.UnhealthySince;
+
+            if (checkpointer.LastFailedRevivalTime.HasValue)
+            {
+                this.state = State.DeadIdle;
+                this.retryAttempts = short.MaxValue; // setting to some big value
+            }
+            else
+            {
+                this.state = State.Idle;
+            }
+        }
+
+        public ICheckpointer Checkpointer { get; }
+
+        public Endpoint Endpoint => this.processor.Endpoint;
+
+        public EndpointExecutorStatus Status =>
+            new EndpointExecutorStatus(this.Endpoint.Id, this.state, this.retryAttempts, this.retryPeriod, this.lastFailedRevivalTime, this.unhealthySince, new CheckpointerStatus(this.Checkpointer.Id, this.Checkpointer.Offset, this.Checkpointer.Proposed));
+
+        public async Task RunAsync(ICommand command)
+        {
+            using (await this.sync.LockAsync())
+            {
+                await RunInternalAsync(this, command);
+            }
+        }
+
+        public Task CloseAsync() => this.RunAsync(Commands.Close);
+
+        public void Dispose() => this.Dispose(true);
+
+        protected virtual void Dispose(bool disposing)
+        {
+            //Debug.Assert(this.state == State.Closed);
+            if (disposing)
+            {
+                this.Checkpointer.Dispose();
+                this.retryTimer.Dispose();
+                this.sync.Dispose();
+            }
+        }
 
         static Task PrepareForSendAsync(EndpointExecutorFsm thisPtr, ICommand command)
         {
@@ -269,19 +261,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
             return TaskEx.Done;
         }
 
-        async void RetryAsync(object obj)
-        {
-            try
-            {
-                this.retryTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
-                await this.RunAsync(Commands.Retry);
-            }
-            catch (Exception ex)
-            {
-                Events.RetryFailed(this, ex);
-            }
-        }
-
         static Task DieAsync(EndpointExecutorFsm thisPtr, ICommand command)
         {
             Preconditions.CheckNotNull(thisPtr);
@@ -342,6 +321,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                             : thisPtr.unhealthySince;
                         Events.SendFailure(thisPtr, result, stopwatch);
                     }
+
                     next = Commands.Checkpoint(result);
                 }
                 else
@@ -366,6 +346,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                     : thisPtr.unhealthySince;
                 next = thisPtr.config.ThrowOnDead ? (ICommand)Commands.Throw(ex) : Commands.Die;
             }
+
             await RunInternalAsync(thisPtr, next);
         }
 
@@ -429,6 +410,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                     ? Commands.Throw(ex)
                     : EnterCheckpointingHelper(thisPtr);
             }
+
             await RunInternalAsync(thisPtr, next);
         }
 
@@ -549,6 +531,27 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
             Events.StateEnter(thisPtr);
         }
 
+        bool ShouldRetry(Exception exception, out TimeSpan retryAfter)
+        {
+            retryAfter = TimeSpan.Zero;
+            ITransientErrorDetectionStrategy detectionStrategy = this.processor.ErrorDetectionStrategy;
+            ShouldRetry shouldRetry = this.config.RetryStrategy.GetShouldRetry();
+            return detectionStrategy.IsTransient(exception) && shouldRetry(this.retryAttempts, exception, out retryAfter);
+        }
+
+        async void RetryAsync(object obj)
+        {
+            try
+            {
+                this.retryTimer.Change(Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+                await this.RunAsync(Commands.Retry);
+            }
+            catch (Exception ex)
+            {
+                Events.RetryFailed(this, ex);
+            }
+        }
+
         static class Events
         {
             const string DateTimeFormat = "o";
@@ -603,8 +606,13 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
 
             public static void Send(EndpointExecutorFsm fsm, ICollection<IMessage> messages, ICollection<IMessage> admitted)
             {
-                Log.LogDebug((int)EventIds.Send, "[Send Sending began. BatchSize: {0}, AdmittedSize: {1}, MaxAdmittedOffset: {2}, {3}",
-                    messages.Count, admitted.Count, admitted.Max(m => m.Offset), GetContextString(fsm));
+                Log.LogDebug(
+                    (int)EventIds.Send,
+                    "[Send Sending began. BatchSize: {0}, AdmittedSize: {1}, MaxAdmittedOffset: {2}, {3}",
+                    messages.Count,
+                    admitted.Count,
+                    admitted.Max(m => m.Offset),
+                    GetContextString(fsm));
             }
 
             public static void SendSuccess(EndpointExecutorFsm fsm, ICollection<IMessage> admitted, ISinkResult<IMessage> result, Stopwatch stopwatch)
@@ -616,8 +624,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                     Log.LogError((int)EventIds.CounterFailure, "[LogExternalWriteLatencyCounterFailed] {0}", error);
                 }
 
-                Log.LogDebug((int)EventIds.SendSuccess, "[SendSuccess] Sending succeeded. AdmittedSize: {0}, SuccessfulSize: {1}, FailedSize: {2}, InvalidSize: {3}, {4}",
-                    admitted.Count, result.Succeeded.Count, result.Failed.Count, result.InvalidDetailsList.Count, GetContextString(fsm));
+                Log.LogDebug(
+                    (int)EventIds.SendSuccess,
+                    "[SendSuccess] Sending succeeded. AdmittedSize: {0}, SuccessfulSize: {1}, FailedSize: {2}, InvalidSize: {3}, {4}",
+                    admitted.Count,
+                    result.Succeeded.Count,
+                    result.Failed.Count,
+                    result.InvalidDetailsList.Count,
+                    GetContextString(fsm));
             }
 
             public static void SendFailureUnhandledException(EndpointExecutorFsm fsm, ICollection<IMessage> messages, Stopwatch stopwatch, Exception exception)
@@ -649,8 +663,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                     Routing.UserAnalyticsLogger.LogInvalidMessage(fsm.Endpoint.IotHubName, invalidDetails.Item, invalidDetails.FailureKind);
                 }
 
-                Log.LogWarning((int)EventIds.SendFailure, failureDetails.RawException, "[SendFailure] Sending failed. SuccessfulSize: {0}, FailedSize: {1}, InvalidSize: {2}, {3}",
-                    result.Succeeded.Count, result.Failed.Count, result.InvalidDetailsList.Count, GetContextString(fsm));
+                Log.LogWarning(
+                    (int)EventIds.SendFailure,
+                    failureDetails.RawException,
+                    "[SendFailure] Sending failed. SuccessfulSize: {0}, FailedSize: {1}, InvalidSize: {2}, {3}",
+                    result.Succeeded.Count,
+                    result.Failed.Count,
+                    result.InvalidDetailsList.Count,
+                    GetContextString(fsm));
 
                 LogUnhealthyEndpointOpMonError(fsm, failureDetails.FailureKind);
             }
@@ -662,14 +682,22 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
 
             public static void Checkpoint(EndpointExecutorFsm fsm, ISinkResult<IMessage> result)
             {
-                Log.LogDebug((int)EventIds.Checkpoint, "[Checkpoint] Checkpointing began. CheckpointOffset: {0}, SuccessfulSize: {1}, RemainingSize: {2}, {3}",
-                    fsm.Status.CheckpointerStatus.Offset, result.Succeeded.Count + result.InvalidDetailsList.Count, result.Failed.Count, GetContextString(fsm));
+                Log.LogDebug(
+                    (int)EventIds.Checkpoint,
+                    "[Checkpoint] Checkpointing began. CheckpointOffset: {0}, SuccessfulSize: {1}, RemainingSize: {2}, {3}",
+                    fsm.Status.CheckpointerStatus.Offset,
+                    result.Succeeded.Count + result.InvalidDetailsList.Count,
+                    result.Failed.Count,
+                    GetContextString(fsm));
             }
 
             public static void CheckpointSuccess(EndpointExecutorFsm fsm, ISinkResult<IMessage> result)
             {
-                Log.LogInformation((int)EventIds.CheckpointSuccess, "[CheckpointSuccess] Checkpointing succeeded. CheckpointOffset: {0}, {1}",
-                    fsm.Status.CheckpointerStatus.Offset, GetContextString(fsm));
+                Log.LogInformation(
+                    (int)EventIds.CheckpointSuccess,
+                    "[CheckpointSuccess] Checkpointing succeeded. CheckpointOffset: {0}, {1}",
+                    fsm.Status.CheckpointerStatus.Offset,
+                    GetContextString(fsm));
 
                 IList<IMessage> invalidMessages = result.InvalidDetailsList.Select(d => d.Item).ToList();
 
@@ -683,8 +711,12 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
 
             public static void CheckpointFailure(EndpointExecutorFsm fsm, Exception ex)
             {
-                Log.LogError((int)EventIds.CheckpointFailure, ex, "[CheckpointFailure] Checkpointing failed. CheckpointOffset: {0}, {1}",
-                    fsm.Status.CheckpointerStatus.Offset, GetContextString(fsm));
+                Log.LogError(
+                    (int)EventIds.CheckpointFailure,
+                    ex,
+                    "[CheckpointFailure] Checkpointing failed. CheckpointOffset: {0}, {1}",
+                    fsm.Status.CheckpointerStatus.Offset,
+                    GetContextString(fsm));
             }
 
             public static void CheckRetryInnerException(Exception ex, bool retry)
@@ -696,16 +728,26 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
             {
                 DateTime next = fsm.systemTime.UtcNow.SafeAdd(fsm.Status.RetryPeriod);
 
-                Log.LogDebug((int)EventIds.Retry, "[Retry] Retrying. Retry.Attempts: {0}, Retry.Period: {1}, Retry.Next: {2}, {3}",
-                    fsm.Status.RetryAttempts, fsm.Status.RetryPeriod.ToString(TimeSpanFormat), next.ToString(DateTimeFormat), GetContextString(fsm));
+                Log.LogDebug(
+                    (int)EventIds.Retry,
+                    "[Retry] Retrying. Retry.Attempts: {0}, Retry.Period: {1}, Retry.Next: {2}, {3}",
+                    fsm.Status.RetryAttempts,
+                    fsm.Status.RetryPeriod.ToString(TimeSpanFormat),
+                    next.ToString(DateTimeFormat),
+                    GetContextString(fsm));
             }
 
             public static void RetryDelay(EndpointExecutorFsm fsm)
             {
                 DateTime next = fsm.systemTime.UtcNow.SafeAdd(fsm.Status.RetryPeriod);
 
-                Log.LogDebug((int)EventIds.RetryDelay, "[RetryDelay] Waiting to retry. Retry.Attempts: {0}, Retry.Period: {1}, Retry.Next: {2}, {3}",
-                    fsm.Status.RetryAttempts, fsm.Status.RetryPeriod.ToString(TimeSpanFormat), next.ToString(DateTimeFormat), GetContextString(fsm));
+                Log.LogDebug(
+                    (int)EventIds.RetryDelay,
+                    "[RetryDelay] Waiting to retry. Retry.Attempts: {0}, Retry.Period: {1}, Retry.Next: {2}, {3}",
+                    fsm.Status.RetryAttempts,
+                    fsm.Status.RetryPeriod.ToString(TimeSpanFormat),
+                    next.ToString(DateTimeFormat),
+                    GetContextString(fsm));
             }
 
             public static void RetryFailed(EndpointExecutorFsm fsm, Exception exception)
@@ -718,9 +760,15 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                 Preconditions.CheckArgument(fsm.Status.LastFailedRevivalTime.HasValue);
                 DateTime reviveAt = fsm.Status.LastFailedRevivalTime.GetOrElse(fsm.systemTime.UtcNow).SafeAdd(fsm.config.RevivePeriod);
 
-                Log.LogWarning((int)EventIds.Dead, "[Dead] Dropping {0} messages. BatchSize: {1}, LastFailedRevivalTime: {2}, UnhealthySince: {3}, ReviveAt: {4}, {5}",
-                    messages.Count, messages.Count, fsm.Status.LastFailedRevivalTime.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat),
-                    fsm.Status.UnhealthySince.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat), reviveAt.ToString(DateTimeFormat), GetContextString(fsm));
+                Log.LogWarning(
+                    (int)EventIds.Dead,
+                    "[Dead] Dropping {0} messages. BatchSize: {1}, LastFailedRevivalTime: {2}, UnhealthySince: {3}, ReviveAt: {4}, {5}",
+                    messages.Count,
+                    messages.Count,
+                    fsm.Status.LastFailedRevivalTime.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat),
+                    fsm.Status.UnhealthySince.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat),
+                    reviveAt.ToString(DateTimeFormat),
+                    GetContextString(fsm));
             }
 
             public static void DeadSuccess(EndpointExecutorFsm fsm, ICollection<IMessage> messages)
@@ -730,9 +778,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                 CultureInfo culture = CultureInfo.InvariantCulture;
                 DateTime reviveAt = fsm.Status.LastFailedRevivalTime.GetOrElse(fsm.systemTime.UtcNow).SafeAdd(fsm.config.RevivePeriod);
 
-                Log.LogWarning((int)EventIds.DeadSuccess, "[DeadSuccess] Dropped {0} messages. BatchSize: {1}, LastFailedRevivalTime: {2}, UnhealthySince: {3}, ReviveAt: {4}, {5}",
-                    messages.Count, messages.Count, fsm.Status.LastFailedRevivalTime.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
-                    fsm.Status.UnhealthySince.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture), reviveAt.ToString(DateTimeFormat, culture),
+                Log.LogWarning(
+                    (int)EventIds.DeadSuccess,
+                    "[DeadSuccess] Dropped {0} messages. BatchSize: {1}, LastFailedRevivalTime: {2}, UnhealthySince: {3}, ReviveAt: {4}, {5}",
+                    messages.Count,
+                    messages.Count,
+                    fsm.Status.LastFailedRevivalTime.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
+                    fsm.Status.UnhealthySince.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
+                    reviveAt.ToString(DateTimeFormat, culture),
                     GetContextString(fsm));
 
                 SetProcessingInternalCounters(fsm, "Dropped", messages);
@@ -753,9 +806,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                 CultureInfo culture = CultureInfo.InvariantCulture;
                 DateTime reviveAt = fsm.Status.LastFailedRevivalTime.GetOrElse(fsm.systemTime.UtcNow).SafeAdd(fsm.config.RevivePeriod);
 
-                Log.LogError((int)EventIds.DeadFailure, ex, "[DeadFailure] Dropping messages failed. LastFailedRevivalTime: {0}, UnhealthySince: {1}, DeadTime:{2}, ReviveAt: {3}, {4}",
-                    fsm.Status.LastFailedRevivalTime.ToString(), fsm.Status.LastFailedRevivalTime.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
-                    fsm.Status.UnhealthySince.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture), reviveAt.ToString(DateTimeFormat, culture),
+                Log.LogError(
+                    (int)EventIds.DeadFailure,
+                    ex,
+                    "[DeadFailure] Dropping messages failed. LastFailedRevivalTime: {0}, UnhealthySince: {1}, DeadTime:{2}, ReviveAt: {3}, {4}",
+                    fsm.Status.LastFailedRevivalTime.ToString(),
+                    fsm.Status.LastFailedRevivalTime.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
+                    fsm.Status.UnhealthySince.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
+                    reviveAt.ToString(DateTimeFormat, culture),
                     GetContextString(fsm));
             }
 
@@ -771,10 +829,13 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
                 CultureInfo culture = CultureInfo.InvariantCulture;
                 DateTime reviveAt = fsm.Status.LastFailedRevivalTime.GetOrElse(fsm.systemTime.UtcNow).SafeAdd(fsm.config.RevivePeriod);
 
-                Log.LogInformation((int)EventIds.PrepareForRevive, "[PrepareForRevive] Attempting to bring endpoint back. LastFailedRevivalTime: {0}, UnhealthySince: {1},  ReviveAt: {2}, {3}",
+                Log.LogInformation(
+                    (int)EventIds.PrepareForRevive,
+                    "[PrepareForRevive] Attempting to bring endpoint back. LastFailedRevivalTime: {0}, UnhealthySince: {1},  ReviveAt: {2}, {3}",
                     fsm.Status.LastFailedRevivalTime.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
                     fsm.Status.UnhealthySince.GetOrElse(Checkpointers.Checkpointer.DateTimeMinValue).ToString(DateTimeFormat, culture),
-                    reviveAt.ToString(DateTimeFormat, culture), GetContextString(fsm));
+                    reviveAt.ToString(DateTimeFormat, culture),
+                    GetContextString(fsm));
             }
 
             public static void Revived(EndpointExecutorFsm fsm)
@@ -809,8 +870,13 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
 
             static string GetContextString(EndpointExecutorFsm fsm)
             {
-                return string.Format(CultureInfo.InvariantCulture, "EndpointId: {0}, EndpointName: {1}, CheckpointerId: {2}, State: {3}",
-                    fsm.Status.Id, fsm.Endpoint.Name, fsm.Status.CheckpointerStatus.Id, fsm.state);
+                return string.Format(
+                    CultureInfo.InvariantCulture,
+                    "EndpointId: {0}, EndpointName: {1}, CheckpointerId: {2}, State: {3}",
+                    fsm.Status.Id,
+                    fsm.Endpoint.Name,
+                    fsm.Status.CheckpointerStatus.Id,
+                    fsm.state);
             }
 
             static void SetProcessingInternalCounters(EndpointExecutorFsm fsm, string status, ICollection<IMessage> messages)

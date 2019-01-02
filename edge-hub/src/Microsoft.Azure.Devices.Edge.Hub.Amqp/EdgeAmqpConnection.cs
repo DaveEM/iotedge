@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System.Security.Principal;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Devices.Edge.Util;
 
@@ -19,9 +20,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
             this.underlyingAmqpConnection = Preconditions.CheckNotNull(amqpConnection, nameof(amqpConnection));
         }
 
-        public T FindExtension<T>() => this.underlyingAmqpConnection.Extensions.Find<T>();
-
         public IPrincipal Principal => this.underlyingAmqpConnection.Principal;
+
+        public T FindExtension<T>() => this.underlyingAmqpConnection.Extensions.Find<T>();
 
         public Task Close() => this.underlyingAmqpConnection.CloseAsync(this.underlyingAmqpConnection.DefaultCloseTimeout);
     }

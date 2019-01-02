@@ -6,21 +6,12 @@ namespace Microsoft.Azure.Devices.Routing.Core
     using System.Collections.Immutable;
     using System.Globalization;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public class Route : IEquatable<Route>
     {
-        public string Id { get; }
-
-        public string Condition { get; }
-
-        public string IotHubName { get; }
-
-        public IMessageSource Source { get; }
-
-        public ISet<Endpoint> Endpoints { get; }
-
         public Route(string id, string condition, string iotHubName, IMessageSource source, ISet<Endpoint> endpoints)
         {
             this.Id = Preconditions.CheckNotNull(id);
@@ -29,6 +20,16 @@ namespace Microsoft.Azure.Devices.Routing.Core
             this.Source = source;
             this.Endpoints = Preconditions.CheckNotNull(endpoints).ToImmutableHashSet();
         }
+
+        public string Condition { get; }
+
+        public ISet<Endpoint> Endpoints { get; }
+
+        public string Id { get; }
+
+        public string IotHubName { get; }
+
+        public IMessageSource Source { get; }
 
         public bool Equals(Route other)
         {
@@ -43,9 +44,9 @@ namespace Microsoft.Azure.Devices.Routing.Core
             }
 
             return string.Equals(this.Id, other.Id) &&
-                string.Equals(this.Condition, other.Condition) &&
-                this.Source.Equals(other.Source) &&
-                this.Endpoints.SetEquals(other.Endpoints);
+                   string.Equals(this.Condition, other.Condition) &&
+                   this.Source.Equals(other.Source) &&
+                   this.Endpoints.SetEquals(other.Endpoints);
         }
 
         public override bool Equals(object obj)

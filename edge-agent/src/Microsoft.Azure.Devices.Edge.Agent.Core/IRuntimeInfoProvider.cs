@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Newtonsoft.Json;
 
     /// <summary>
@@ -20,8 +21,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
 
     public class SystemInfo
     {
-        static SystemInfo Empty { get; } = new SystemInfo(string.Empty, string.Empty, string.Empty);
-
         [JsonConstructor]
         public SystemInfo(string operatingSystemType, string architecture, string version)
         {
@@ -30,10 +29,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             this.Version = version;
         }
 
-        public string OperatingSystemType { get; }
-
         public string Architecture { get; }
 
+        public string OperatingSystemType { get; }
+
         public string Version { get; }
+
+        static SystemInfo Empty { get; } = new SystemInfo(string.Empty, string.Empty, string.Empty);
     }
 }

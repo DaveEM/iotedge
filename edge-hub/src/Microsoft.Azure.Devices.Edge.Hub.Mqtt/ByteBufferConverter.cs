@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
-    using System.IO;
     using DotNetty.Buffers;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class ByteBufferConverter : IByteBufferConverter

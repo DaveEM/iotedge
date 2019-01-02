@@ -9,9 +9,27 @@ namespace Microsoft.Azure.Devices.Routing.Core
         static IRoutingUserAnalyticsLogger userAnalyticsLogger;
         static IRoutingUserMetricLogger userMetricLogger;
 
-        public static ILoggerFactory LoggerFactory { get; set; } = new LoggerFactory();
-        
         const int EventIdStart = 9000;
+
+        public static ILoggerFactory LoggerFactory { get; set; } = new LoggerFactory();
+
+        public static IRoutingPerfCounter PerfCounter
+        {
+            get => perfCounter ?? NullRoutingPerfCounter.Instance;
+            set => perfCounter = value;
+        }
+
+        public static IRoutingUserAnalyticsLogger UserAnalyticsLogger
+        {
+            get => userAnalyticsLogger ?? NullUserAnalyticsLogger.Instance;
+            set => userAnalyticsLogger = value;
+        }
+
+        public static IRoutingUserMetricLogger UserMetricLogger
+        {
+            get => userMetricLogger ?? NullRoutingUserMetricLogger.Instance;
+            set => userMetricLogger = value;
+        }
 
         public static class EventIds
         {
@@ -36,25 +54,6 @@ namespace Microsoft.Azure.Devices.Routing.Core
             // Services
             public const int FilteringRoutingService = EventIdStart + 1000;
             public const int FrontendRoutingService = EventIdStart + 1100;
-        }
-
-
-        public static IRoutingPerfCounter PerfCounter
-        {
-            get => perfCounter ?? NullRoutingPerfCounter.Instance;
-            set => perfCounter = value;
-        }
-
-        public static IRoutingUserMetricLogger UserMetricLogger
-        {
-            get => userMetricLogger ?? NullRoutingUserMetricLogger.Instance;
-            set => userMetricLogger = value;
-        }
-
-        public static IRoutingUserAnalyticsLogger UserAnalyticsLogger
-        {
-            get => userAnalyticsLogger ?? NullUserAnalyticsLogger.Instance;
-            set => userAnalyticsLogger = value;
         }
     }
 }

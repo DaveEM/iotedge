@@ -3,13 +3,16 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Exceptions;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Cloud;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class CloudReceiverTest
@@ -24,7 +27,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
         public async Task MethodCallHandler_WhenResponse_WithRequestIdReceived_Completes()
         {
             var cloudListener = new Mock<ICloudListener>();
-            cloudListener.Setup(p => p.CallMethodAsync(It.IsAny<Core.DirectMethodRequest>())).Returns(Task.FromResult(new DirectMethodResponse(RequestId, Data, StatusCode)));
+            cloudListener.Setup(p => p.CallMethodAsync(It.IsAny<DirectMethodRequest>())).Returns(Task.FromResult(new DirectMethodResponse(RequestId, Data, StatusCode)));
             var messageConverter = new Mock<IMessageConverterProvider>();
             var identity = Mock.Of<IIdentity>(i => i.Id == "device1");
 
@@ -34,7 +37,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             CloudProxy.CloudReceiver cloudReceiver = cloudProxy.GetCloudReceiver();
 
             MethodResponse methodResponse = await cloudReceiver.MethodCallHandler(new MethodRequest(MethodName, Data), null);
-            cloudListener.Verify(p => p.CallMethodAsync(It.Is<Core.DirectMethodRequest>(x => x.Name == MethodName && x.Data == Data)), Times.Once);
+            cloudListener.Verify(p => p.CallMethodAsync(It.Is<DirectMethodRequest>(x => x.Name == MethodName && x.Data == Data)), Times.Once);
             Assert.NotNull(methodResponse);
         }
 
@@ -75,15 +78,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             //Arrange
             var sampleMessage = Mock.Of<IMessage>();
 
-            var messageConverter = new  Mock<IMessageConverter<Client.Message>>();
-            messageConverter.Setup(p => p.ToMessage(It.IsAny<Client.Message>())).Returns(sampleMessage);
+            var messageConverter = new Mock<IMessageConverter<Message>>();
+            messageConverter.Setup(p => p.ToMessage(It.IsAny<Message>())).Returns(sampleMessage);
 
             var messageConverterProvider = new Mock<IMessageConverterProvider>();
-            messageConverterProvider.Setup(p => p.Get<Client.Message>()).Returns(messageConverter.Object);
+            messageConverterProvider.Setup(p => p.Get<Message>()).Returns(messageConverter.Object);
 
             var identity = Mock.Of<IIdentity>(i => i.Id == "device1");
             var deviceClient = new Mock<IClient>();
-            deviceClient.Setup(p => p.ReceiveAsync(It.IsAny<TimeSpan>())).ReturnsAsync(new Client.Message(new byte[0]));
+            deviceClient.Setup(p => p.ReceiveAsync(It.IsAny<TimeSpan>())).ReturnsAsync(new Message(new byte[0]));
 
             var cloudListener = new Mock<ICloudListener>();
             var cloudProxy = new CloudProxy(deviceClient.Object, messageConverterProvider.Object, identity.Id, (id, s) => { }, cloudListener.Object, TimeSpan.FromMinutes(60), true);
@@ -129,18 +132,18 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
         public void CloudReceiverIgnoresOtherExceptionsWhenReceivingMessages()
         {
             //Arrange
-            var messageConverter = new Mock<IMessageConverter<Client.Message>>();
-            messageConverter.Setup(p => p.ToMessage(It.IsAny<Client.Message>())).Returns<IMessage>(null);
+            var messageConverter = new Mock<IMessageConverter<Message>>();
+            messageConverter.Setup(p => p.ToMessage(It.IsAny<Message>())).Returns<IMessage>(null);
 
             var messageConverterProvider = new Mock<IMessageConverterProvider>();
-            messageConverterProvider.Setup(p => p.Get<Client.Message>()).Returns(messageConverter.Object);
+            messageConverterProvider.Setup(p => p.Get<Message>()).Returns(messageConverter.Object);
 
             var identity = Mock.Of<IIdentity>(i => i.Id == "device1");
             var deviceClient = new Mock<IClient>();
-            deviceClient.Setup(p => p.ReceiveAsync(It.IsAny<TimeSpan>())).ReturnsAsync(new Client.Message(new byte[0]));
+            deviceClient.Setup(p => p.ReceiveAsync(It.IsAny<TimeSpan>())).ReturnsAsync(new Message(new byte[0]));
 
             var cloudListener = new Mock<ICloudListener>();
-            var cloudProxy = new CloudProxy(deviceClient.Object, messageConverterProvider.Object, identity.Id, (id, s) => { }, cloudListener.Object, TimeSpan.FromMinutes(60), true);            
+            var cloudProxy = new CloudProxy(deviceClient.Object, messageConverterProvider.Object, identity.Id, (id, s) => { }, cloudListener.Object, TimeSpan.FromMinutes(60), true);
 
             CloudProxy.CloudReceiver cloudReceiver = cloudProxy.GetCloudReceiver();
 
@@ -155,7 +158,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             cloudListener.Verify(m => m.ProcessMessageAsync(null));
         }
 
-
         [Fact]
         [Unit]
         public void SetupDesiredPropertyUpdatesAsync()
@@ -167,7 +169,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             var deviceClient = new Mock<IClient>();
 
             var cloudListener = new Mock<ICloudListener>();
-            var cloudProxy = new CloudProxy(deviceClient.Object, messageConverterProvider.Object, identity.Id, (id, s) => { }, cloudListener.Object, TimeSpan.FromMinutes(60), true);            
+            var cloudProxy = new CloudProxy(deviceClient.Object, messageConverterProvider.Object, identity.Id, (id, s) => { }, cloudListener.Object, TimeSpan.FromMinutes(60), true);
 
             CloudProxy.CloudReceiver cloudReceiver = cloudProxy.GetCloudReceiver();
 
@@ -190,7 +192,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             deviceClient.Setup(dc => dc.SetDesiredPropertyUpdateCallbackAsync(null, null)).Throws(new Exception("Update this test!")); //This is to catch onde the TODO on the code get's in.
 
             var cloudListener = new Mock<ICloudListener>();
-            var cloudProxy = new CloudProxy(deviceClient.Object, messageConverterProvider.Object, identity.Id, (id, s) => { }, cloudListener.Object, TimeSpan.FromMinutes(60), true);            
+            var cloudProxy = new CloudProxy(deviceClient.Object, messageConverterProvider.Object, identity.Id, (id, s) => { }, cloudListener.Object, TimeSpan.FromMinutes(60), true);
 
             CloudProxy.CloudReceiver cloudReceiver = cloudProxy.GetCloudReceiver();
 
@@ -198,7 +200,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             cloudReceiver.RemoveDesiredPropertyUpdatesAsync();
 
             //Assert
-
         }
     }
 }

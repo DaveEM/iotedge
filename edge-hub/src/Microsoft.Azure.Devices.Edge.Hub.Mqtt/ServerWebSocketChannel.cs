@@ -6,11 +6,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
     using System.Net.WebSockets;
     using System.Threading;
     using System.Threading.Tasks;
+
     using DotNetty.Buffers;
     using DotNetty.Common.Utilities;
     using DotNetty.Transport.Channels;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
 
     public sealed class ServerWebSocketChannel : AbstractChannel, IDisposable
@@ -21,10 +24,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
         readonly string correlationId;
 
         volatile bool active;
-
-        internal bool ReadPending { get; set; }
-
-        internal bool WriteInProgress { get; set; }
 
         public ServerWebSocketChannel(WebSocket webSocket, EndPoint remoteEndPoint)
             : base(null)
@@ -39,15 +38,23 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             this.correlationId = $"{this.Id}";
         }
 
-        public override IChannelConfiguration Configuration { get; }
-
-        public override bool Open => this.active && this.webSocket.State == WebSocketState.Open;
-
         public override bool Active => this.active;
+
+        public override IChannelConfiguration Configuration { get; }
 
         public override ChannelMetadata Metadata { get; }
 
+        public override bool Open => this.active && this.webSocket.State == WebSocketState.Open;
+
         public TaskCompletionSource<int> WebSocketClosed => this.webSocketClosed;
+
+        internal bool ReadPending { get; set; }
+
+        internal bool WriteInProgress { get; set; }
+
+        protected override EndPoint LocalAddressInternal => throw new NotSupportedException();
+
+        protected override EndPoint RemoteAddressInternal { get; }
 
         public ServerWebSocketChannel Option<T>(ChannelOption<T> option, T value)
         {
@@ -57,37 +64,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             return this;
         }
 
-        protected override EndPoint LocalAddressInternal => throw new NotSupportedException();
-
-        protected override EndPoint RemoteAddressInternal { get; }
+        public void Dispose()
+        {
+            this.writeCancellationTokenSource.Dispose();
+        }
 
         protected override IChannelUnsafe NewUnsafe() => new WebSocketChannelUnsafe(this);
-
-        class WebSocketChannelUnsafe : AbstractUnsafe
-        {
-            public WebSocketChannelUnsafe(AbstractChannel channel)
-                :base(channel)
-            {
-            }
-
-            public override Task ConnectAsync(EndPoint remoteAddress, EndPoint localAddress)
-            {
-                throw new NotSupportedException("ServerWebSocketChannel does not support BindAsync()");
-            }
-
-            protected override void Flush0()
-            {
-                // Flush immediately only when there's no pending flush.
-                // If there's a pending flush operation, event loop will call FinishWrite() later,
-                // and thus there's no need to call it now.
-                if (((ServerWebSocketChannel)this.channel).WriteInProgress)
-                {
-                    return;
-                }
-
-                base.Flush0();
-            }
-        }
 
         protected override bool IsCompatible(IEventLoop eventLoop) => true;
 
@@ -303,11 +285,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             }
         }
 
-        public void Dispose()
-        {
-            this.writeCancellationTokenSource.Dispose();
-        }
-
         static class Events
         {
             static readonly ILogger Log = Logger.Factory.CreateLogger<ServerWebSocketChannel>();
@@ -325,32 +302,58 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 
             public static void TransportClosed(string correlationId)
             {
-                Log.LogInformation((int)Events.EventIds.TransportClosed, Invariant($"Transport closed. CorrelationId {correlationId}"));
+                Log.LogInformation((int)EventIds.TransportClosed, Invariant($"Transport closed. CorrelationId {correlationId}"));
             }
 
             public static void CloseException(string correlationId, Exception ex)
             {
-                Log.LogWarning((int)Events.EventIds.CloseException, ex, Invariant($"Error closing transport. CorrelationId {correlationId}"));
+                Log.LogWarning((int)EventIds.CloseException, ex, Invariant($"Error closing transport. CorrelationId {correlationId}"));
             }
 
             public static void ReadException(string correlationId, Exception ex)
             {
-                Log.LogWarning((int)Events.EventIds.ReadException, ex, Invariant($"Error reading transport. CorrelationId {correlationId}"));
+                Log.LogWarning((int)EventIds.ReadException, ex, Invariant($"Error reading transport. CorrelationId {correlationId}"));
             }
 
             public static void WriteException(string correlationId, Exception ex)
             {
-                Log.LogWarning((int)Events.EventIds.WriteException, ex, Invariant($"Error writing transport. CorrelationId {correlationId}"));
+                Log.LogWarning((int)EventIds.WriteException, ex, Invariant($"Error writing transport. CorrelationId {correlationId}"));
             }
 
             public static void TransportAborted(string correlationId)
             {
-                Log.LogInformation((int)Events.EventIds.TransportAborted, Invariant($"Transport aborted. CorrelationId {correlationId}"));
+                Log.LogInformation((int)EventIds.TransportAborted, Invariant($"Transport aborted. CorrelationId {correlationId}"));
             }
 
             public static void TransportAbortFailedException(string correlationId, Exception ex)
             {
-                Log.LogWarning((int)Events.EventIds.TransportAbortFailedException, ex, Invariant($"Error aborting transport. CorrelationId {correlationId}"));
+                Log.LogWarning((int)EventIds.TransportAbortFailedException, ex, Invariant($"Error aborting transport. CorrelationId {correlationId}"));
+            }
+        }
+
+        class WebSocketChannelUnsafe : AbstractUnsafe
+        {
+            public WebSocketChannelUnsafe(AbstractChannel channel)
+                : base(channel)
+            {
+            }
+
+            public override Task ConnectAsync(EndPoint remoteAddress, EndPoint localAddress)
+            {
+                throw new NotSupportedException("ServerWebSocketChannel does not support BindAsync()");
+            }
+
+            protected override void Flush0()
+            {
+                // Flush immediately only when there's no pending flush.
+                // If there's a pending flush operation, event loop will call FinishWrite() later,
+                // and thus there's no need to call it now.
+                if (((ServerWebSocketChannel)this.channel).WriteInProgress)
+                {
+                    return;
+                }
+
+                base.Flush0();
             }
         }
     }

@@ -7,11 +7,13 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
     using System.Net;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.ProtocolGateway.Identity;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
 
     public class DeviceIdentityProvider : IDeviceIdentityProvider
@@ -226,9 +228,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                 ErrorCreatingIdentity
             }
 
-            static string GetId(string deviceId, string moduleId) =>
-                string.IsNullOrWhiteSpace(moduleId) ? deviceId : $"{deviceId}/{moduleId}";
-
             public static void Success(string clientId, string username)
                 => Log.LogInformation((int)EventIds.CreateSuccess, Invariant($"Successfully generated identity for clientId {clientId} and username {username}"));
 
@@ -243,6 +242,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 
             public static void ErrorCreatingIdentity(Exception ex)
                 => Log.LogError((int)EventIds.ErrorCreatingIdentity, ex, "Error creating client identity");
+
+            static string GetId(string deviceId, string moduleId) =>
+                string.IsNullOrWhiteSpace(moduleId) ? deviceId : $"{deviceId}/{moduleId}";
         }
     }
 }

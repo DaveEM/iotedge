@@ -4,7 +4,9 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
     using System;
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Unit]

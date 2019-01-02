@@ -5,14 +5,26 @@ namespace Microsoft.Azure.Devices.Routing.Core
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public interface ICheckpointer : IDisposable
     {
         /// <summary>
+        /// Checkpointer has outstanding messages. Messages have been received
+        /// for processing but not yet checkpointed.
+        /// </summary>
+        bool HasOutstanding { get; }
+
+        /// <summary>
         /// Checkpointer unique identifier
         /// </summary>
         string Id { get; }
+
+        /// <summary>
+        /// Exposes the last time an endpoint failed to revive (or the first time the endpoint dies)
+        /// </summary>
+        Option<DateTime> LastFailedRevivalTime { get; }
 
         /// <summary>
         /// Exposes the latest message that has been set. This is public
@@ -22,25 +34,14 @@ namespace Microsoft.Azure.Devices.Routing.Core
         long Offset { get; }
 
         /// <summary>
-        /// Exposes the last time an endpoint failed to revive (or the first time the endpoint dies)
-        /// </summary>
-        Option<DateTime> LastFailedRevivalTime { get; }
-
-        /// <summary>
-        /// Exposes the first time an endpoint started failing prior to being dead (i.e. the time an endpoint started the process of dying)
-        /// </summary>
-        Option<DateTime> UnhealthySince { get; }
-
-        /// <summary>
         /// Exposes the latest offset that has been proposed.
         /// </summary>
         long Proposed { get; }
 
         /// <summary>
-        /// Checkpointer has outstanding messages. Messages have been received
-        /// for processing but not yet checkpointed.
+        /// Exposes the first time an endpoint started failing prior to being dead (i.e. the time an endpoint started the process of dying)
         /// </summary>
-        bool HasOutstanding { get; }
+        Option<DateTime> UnhealthySince { get; }
 
         /// <summary>
         /// Called before processing on a message begins. This is to allow tracking

@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.WebJobs.Extensions.EdgeHub
 {
     using System;
+
     using Microsoft.Azure.WebJobs.Description;
 
     /// <summary>

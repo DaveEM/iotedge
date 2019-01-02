@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Endpoints;
 
     public interface IEndpointExecutorFactory

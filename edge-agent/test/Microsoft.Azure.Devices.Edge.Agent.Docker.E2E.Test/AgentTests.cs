@@ -9,10 +9,11 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.E2E.Test
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::Docker.DotNet;
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
-    using Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Planners;
     using Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Reporters;
@@ -22,142 +23,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.E2E.Test
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
+
     using Moq;
+
     using Newtonsoft.Json;
+
     using Xunit;
 
     public class AgentTests
     {
-        [Integration]
-        [Theory]
-        [MemberData(nameof(GenerateStartTestData))]
-        public async Task AgentStartsUpModules(TestConfig testConfig)
-        {
-            ILoggerFactory loggerFactory = new LoggerFactory()
-                .AddConsole();
-
-            // Build the docker host URL.
-            string dockerHostUrl = ConfigHelper.TestConfig["dockerHostUrl"];
-            DockerClient client = new DockerClientConfiguration(new Uri(dockerHostUrl)).CreateClient();
-
-            try
-            {
-                // Remove any running containers with the same name that may be a left-over
-                // from previous test runs.
-                await RemoveContainer(client, testConfig);
-
-                // Initialize docker configuration for this module.
-                DockerConfig dockerConfig = testConfig.ImageCreateOptions != null
-                    ? new DockerConfig(testConfig.Image, testConfig.ImageCreateOptions)
-                    : new DockerConfig(testConfig.Image);
-
-                // Initialize an Edge Agent module object.
-                var dockerModule = new DockerModule(
-                    testConfig.Name,
-                    testConfig.Version,
-                    ModuleStatus.Running,
-                    Core.RestartPolicy.OnUnhealthy,
-                    dockerConfig,
-                    null,
-                    null
-                );
-                var modules = new Dictionary<string, IModule> { [testConfig.Name] = dockerModule };
-                var systemModules = new SystemModules(null, null);
-
-                // Start up the agent and run a "reconcile".
-                var dockerLoggingOptions = new Dictionary<string, string>
-                {
-                    {"max-size", "1m"},
-                    {"max-file", "1" }
-                };
-                var loggingConfig = new DockerLoggingConfig("json-file", dockerLoggingOptions);
-
-                string sharedAccessKey = Convert.ToBase64String(Encoding.UTF8.GetBytes("test"));
-                IConfigurationRoot configRoot = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
-                {
-                    { "DeviceConnectionString", $"Hostname=fakeiothub;Deviceid=test;SharedAccessKey={sharedAccessKey}" }
-                }).Build();
-
-                var runtimeConfig = new DockerRuntimeConfig("1.24.0", "{}");
-                var runtimeInfo = new DockerRuntimeInfo("docker", runtimeConfig);
-                var deploymentConfigInfo = new DeploymentConfigInfo(1, new DeploymentConfig("1.0", runtimeInfo, systemModules, modules));
-
-                var configSource = new Mock<IConfigSource>();
-                configSource.Setup(cs => cs.Configuration).Returns(configRoot);
-                configSource.Setup(cs => cs.GetDeploymentConfigInfoAsync()).ReturnsAsync(deploymentConfigInfo);
-
-                // TODO: Fix this up with a real reporter. But before we can do that we need to use
-                // the real configuration source that talks to IoT Hub above.
-                NullReporter reporter = NullReporter.Instance;
-
-                var restartStateStore = Mock.Of<IEntityStore<string, ModuleState>>();
-                var configStore = Mock.Of<IEntityStore<string, string>>();
-                var deploymentConfigInfoSerde = Mock.Of<ISerde<DeploymentConfigInfo>>();
-                IRestartPolicyManager restartManager = new Mock<IRestartPolicyManager>().Object;
-
-                var dockerCommandFactory = new DockerCommandFactory(client, loggingConfig, configSource.Object, new CombinedDockerConfigProvider(Enumerable.Empty<AuthConfig>()));
-                IRuntimeInfoProvider runtimeInfoProvider = await RuntimeInfoProvider.CreateAsync(client);
-                IEnvironmentProvider environmentProvider = await DockerEnvironmentProvider.CreateAsync(runtimeInfoProvider, restartStateStore, restartManager);
-                var commandFactory = new LoggingCommandFactory(dockerCommandFactory, loggerFactory);
-
-                var credential = new ConnectionStringCredentials("fake");
-                var identity = new Mock<IModuleIdentity>();
-                identity.Setup(id => id.Credentials).Returns(credential);
-                identity.Setup(id => id.ModuleId).Returns(testConfig.Name);
-                IImmutableDictionary<string, IModuleIdentity> identities = new Dictionary<string, IModuleIdentity>()
-                {
-                    [testConfig.Name] = identity.Object
-                }.ToImmutableDictionary();
-                var moduleIdentityLifecycleManager = new Mock<IModuleIdentityLifecycleManager>();
-                moduleIdentityLifecycleManager.Setup(m => m.GetModuleIdentitiesAsync(It.IsAny<ModuleSet>(), It.IsAny<ModuleSet>())).Returns(Task.FromResult(identities));
-
-                Agent agent = await Agent.Create(configSource.Object, new RestartPlanner(commandFactory), new OrderedPlanRunner(), reporter,
-                    moduleIdentityLifecycleManager.Object, environmentProvider, configStore, deploymentConfigInfoSerde, NullEncryptionProvider.Instance);
-                await agent.ReconcileAsync(CancellationToken.None);
-
-                // Sometimes the container is still not ready by the time we run the validator.
-                // So we attempt validation multiple times and bail only if all of them fail.
-                bool validated = false;
-                int attempts = 0;
-                const int MaxAttempts = 5;
-                while (!validated && attempts < MaxAttempts)
-                {
-                    validated = testConfig.Validator.Validate();
-                    if (!validated)
-                    {
-                        Thread.Sleep(TimeSpan.FromSeconds(5));
-                    }
-                    ++attempts;
-                }
-
-                Assert.Equal(true, validated);
-            }
-            finally
-            {
-                await RemoveContainer(client, testConfig);
-            }
-        }
-
-        private static async Task RemoveContainer(IDockerClient client, TestConfig testConfig)
-        {
-            // get current list of containers (running or otherwise) where their name
-            // matches what's given in the test settings
-            IList<ContainerListResponse> containersList = await client.Containers.ListContainersAsync(
-                new ContainersListParameters
-                {
-                    All = true
-                });
-            IEnumerable<ContainerListResponse> toBeRemoved = containersList
-                .Where(c => c.Names.Contains($"/{testConfig.Name}"));
-
-            // blow them away!
-            var removeParams = new ContainerRemoveParameters
-            {
-                Force = true
-            };
-            await Task.WhenAll(toBeRemoved.Select(c => client.Containers.RemoveContainerAsync(c.ID, removeParams)));
-        }
-
         public static IEnumerable<object[]> GenerateStartTestData()
         {
             IEnumerable<IConfigurationSection> testsToRun = ConfigHelper.TestConfig.GetSection("testSuite").GetChildren();
@@ -207,6 +81,146 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.E2E.Test
                 });
 
             return result;
+        }
+
+        [Integration]
+        [Theory]
+        [MemberData(nameof(GenerateStartTestData))]
+        public async Task AgentStartsUpModules(TestConfig testConfig)
+        {
+            ILoggerFactory loggerFactory = new LoggerFactory()
+                .AddConsole();
+
+            // Build the docker host URL.
+            string dockerHostUrl = ConfigHelper.TestConfig["dockerHostUrl"];
+            DockerClient client = new DockerClientConfiguration(new Uri(dockerHostUrl)).CreateClient();
+
+            try
+            {
+                // Remove any running containers with the same name that may be a left-over
+                // from previous test runs.
+                await RemoveContainer(client, testConfig);
+
+                // Initialize docker configuration for this module.
+                DockerConfig dockerConfig = testConfig.ImageCreateOptions != null
+                    ? new DockerConfig(testConfig.Image, testConfig.ImageCreateOptions)
+                    : new DockerConfig(testConfig.Image);
+
+                // Initialize an Edge Agent module object.
+                var dockerModule = new DockerModule(
+                    testConfig.Name,
+                    testConfig.Version,
+                    ModuleStatus.Running,
+                    global::Microsoft.Azure.Devices.Edge.Agent.Core.RestartPolicy.OnUnhealthy,
+                    dockerConfig,
+                    null,
+                    null
+                );
+                var modules = new Dictionary<string, IModule> { [testConfig.Name] = dockerModule };
+                var systemModules = new SystemModules(null, null);
+
+                // Start up the agent and run a "reconcile".
+                var dockerLoggingOptions = new Dictionary<string, string>
+                {
+                    { "max-size", "1m" },
+                    { "max-file", "1" }
+                };
+                var loggingConfig = new DockerLoggingConfig("json-file", dockerLoggingOptions);
+
+                string sharedAccessKey = Convert.ToBase64String(Encoding.UTF8.GetBytes("test"));
+                IConfigurationRoot configRoot = new ConfigurationBuilder().AddInMemoryCollection(
+                    new Dictionary<string, string>
+                    {
+                        { "DeviceConnectionString", $"Hostname=fakeiothub;Deviceid=test;SharedAccessKey={sharedAccessKey}" }
+                    }).Build();
+
+                var runtimeConfig = new DockerRuntimeConfig("1.24.0", "{}");
+                var runtimeInfo = new DockerRuntimeInfo("docker", runtimeConfig);
+                var deploymentConfigInfo = new DeploymentConfigInfo(1, new DeploymentConfig("1.0", runtimeInfo, systemModules, modules));
+
+                var configSource = new Mock<IConfigSource>();
+                configSource.Setup(cs => cs.Configuration).Returns(configRoot);
+                configSource.Setup(cs => cs.GetDeploymentConfigInfoAsync()).ReturnsAsync(deploymentConfigInfo);
+
+                // TODO: Fix this up with a real reporter. But before we can do that we need to use
+                // the real configuration source that talks to IoT Hub above.
+                NullReporter reporter = NullReporter.Instance;
+
+                var restartStateStore = Mock.Of<IEntityStore<string, ModuleState>>();
+                var configStore = Mock.Of<IEntityStore<string, string>>();
+                var deploymentConfigInfoSerde = Mock.Of<ISerde<DeploymentConfigInfo>>();
+                IRestartPolicyManager restartManager = new Mock<IRestartPolicyManager>().Object;
+
+                var dockerCommandFactory = new DockerCommandFactory(client, loggingConfig, configSource.Object, new CombinedDockerConfigProvider(Enumerable.Empty<AuthConfig>()));
+                IRuntimeInfoProvider runtimeInfoProvider = await RuntimeInfoProvider.CreateAsync(client);
+                IEnvironmentProvider environmentProvider = await DockerEnvironmentProvider.CreateAsync(runtimeInfoProvider, restartStateStore, restartManager);
+                var commandFactory = new LoggingCommandFactory(dockerCommandFactory, loggerFactory);
+
+                var credential = new ConnectionStringCredentials("fake");
+                var identity = new Mock<IModuleIdentity>();
+                identity.Setup(id => id.Credentials).Returns(credential);
+                identity.Setup(id => id.ModuleId).Returns(testConfig.Name);
+                IImmutableDictionary<string, IModuleIdentity> identities = new Dictionary<string, IModuleIdentity>()
+                {
+                    [testConfig.Name] = identity.Object
+                }.ToImmutableDictionary();
+                var moduleIdentityLifecycleManager = new Mock<IModuleIdentityLifecycleManager>();
+                moduleIdentityLifecycleManager.Setup(m => m.GetModuleIdentitiesAsync(It.IsAny<ModuleSet>(), It.IsAny<ModuleSet>())).Returns(Task.FromResult(identities));
+
+                Agent agent = await Agent.Create(
+                    configSource.Object,
+                    new RestartPlanner(commandFactory),
+                    new OrderedPlanRunner(),
+                    reporter,
+                    moduleIdentityLifecycleManager.Object,
+                    environmentProvider,
+                    configStore,
+                    deploymentConfigInfoSerde,
+                    NullEncryptionProvider.Instance);
+                await agent.ReconcileAsync(CancellationToken.None);
+
+                // Sometimes the container is still not ready by the time we run the validator.
+                // So we attempt validation multiple times and bail only if all of them fail.
+                bool validated = false;
+                int attempts = 0;
+                const int MaxAttempts = 5;
+                while (!validated && attempts < MaxAttempts)
+                {
+                    validated = testConfig.Validator.Validate();
+                    if (!validated)
+                    {
+                        Thread.Sleep(TimeSpan.FromSeconds(5));
+                    }
+
+                    ++attempts;
+                }
+
+                Assert.Equal(true, validated);
+            }
+            finally
+            {
+                await RemoveContainer(client, testConfig);
+            }
+        }
+
+        static async Task RemoveContainer(IDockerClient client, TestConfig testConfig)
+        {
+            // get current list of containers (running or otherwise) where their name
+            // matches what's given in the test settings
+            IList<ContainerListResponse> containersList = await client.Containers.ListContainersAsync(
+                new ContainersListParameters
+                {
+                    All = true
+                });
+            IEnumerable<ContainerListResponse> toBeRemoved = containersList
+                .Where(c => c.Names.Contains($"/{testConfig.Name}"));
+
+            // blow them away!
+            var removeParams = new ContainerRemoveParameters
+            {
+                Force = true
+            };
+            await Task.WhenAll(toBeRemoved.Select(c => client.Containers.RemoveContainerAsync(c.ID, removeParams)));
         }
     }
 }

@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Config
 {
     using System;
+
     using Newtonsoft.Json;
 
     public class StoreAndForwardConfiguration
@@ -13,10 +14,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Config
             this.TimeToLive = timeToLiveSecs < 0 ? TimeSpan.MaxValue : TimeSpan.FromSeconds(timeToLiveSecs);
         }
 
-        [JsonProperty(PropertyName = "timeToLiveSecs")]
-        public int TimeToLiveSecs { get; }
-
         [JsonIgnore]
         public TimeSpan TimeToLive { get; }
+
+        [JsonProperty(PropertyName = "timeToLiveSecs")]
+        public int TimeToLiveSecs { get; }
     }
 }

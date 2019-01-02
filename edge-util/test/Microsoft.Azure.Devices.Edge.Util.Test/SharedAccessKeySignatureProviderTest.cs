@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
     using System.Security.Cryptography;
     using System.Text;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class SharedAccessKeySignatureProviderTest

@@ -13,7 +13,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util.Concurrency
         readonly Task<Releaser> releaser;
         readonly SemaphoreSlim semaphore;
 
-        public AsyncLock() : this(1)
+        public AsyncLock()
+            : this(1)
         {
         }
 
@@ -28,10 +29,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util.Concurrency
         public Task<Releaser> LockAsync(CancellationToken token)
         {
             Task wait = this.semaphore.WaitAsync(token);
-            return wait.Status == TaskStatus.RanToCompletion ? this.releaser :
-                wait.ContinueWith((_, state) => new Releaser((AsyncLock)state),
-                    this, CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+            return wait.Status == TaskStatus.RanToCompletion
+                ? this.releaser
+                : wait.ContinueWith(
+                    (_, state) => new Releaser((AsyncLock)state),
+                    this,
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion,
+                    TaskScheduler.Default);
         }
 
         /// <inheritdoc />

@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core
 {
     using System;
+
     using Microsoft.Azure.Devices.Routing.Core.Query;
 
     public interface IRouteCompiler

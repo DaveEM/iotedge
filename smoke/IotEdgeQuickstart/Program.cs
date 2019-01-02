@@ -4,8 +4,11 @@ namespace IotEdgeQuickstart
     using System;
     using System.Runtime.InteropServices;
     using System.Threading.Tasks;
+
     using IotEdgeQuickstart.Details;
+
     using McMaster.Extensions.CommandLineUtils;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
 
@@ -57,45 +60,45 @@ Defaults:
   --clean_up_existing_device false
   --proxy                    No proxy is used
 "
-        )]
+    )]
     [HelpOption]
     class Program
     {
-        // ReSharper disable once UnusedMember.Local
-        static int Main(string[] args) => CommandLineApplication.ExecuteAsync<Program>(args).Result;
-
         [Option("-a|--bootstrapper-archive <path>", Description = "Path to bootstrapper archive")]
         public string BootstrapperArchivePath { get; } = Environment.GetEnvironmentVariable("bootstrapperArchivePath");
 
         [Option("-b|--bootstrapper=<iotedged/iotedgectl>", CommandOptionType.SingleValue, Description = "Which bootstrapper to use")]
         public BootstrapperType BootstrapperType { get; } = BootstrapperType.Iotedged;
 
-        [Option("-c|--connection-string <value>", Description = "IoT Hub connection string (hub-scoped, e.g. iothubowner)")]
-        public string IotHubConnectionString { get; } = Environment.GetEnvironmentVariable("iothubConnectionString");
+        [Option("--clean_up_existing_device <true/false>", CommandOptionType.SingleValue, Description = "Clean up existing device on success.")]
+        public bool CleanUpExistingDeviceOnSuccess { get; } = false;
+
+        [Option("-l|--deployment <filename>", Description = "Deployment json file")]
+        public string DeploymentFileName { get; } = Environment.GetEnvironmentVariable("deployment");
+
+        [Option("--device_ca_cert", Description = "path to the device ca certificate and its chain")]
+        public string DeviceCaCert { get; } = "";
+
+        [Option("--trusted_ca_certs", Description = "path to a file containing all the trusted CA")]
+        public string DeviceCaCerts { get; } = "";
+
+        [Option("--device_ca_pk", Description = "path to the device ca private key file")]
+        public string DeviceCaPk { get; } = "";
 
         [Option("-d|--device-id", Description = "Edge device identifier registered with IoT Hub")]
         public string DeviceId { get; } = $"iot-edge-quickstart-{Guid.NewGuid()}";
 
-        [Option("-e|--eventhub-endpoint <value>", Description = "Event Hub-compatible endpoint for IoT Hub, including EntityPath")]
-        public string EventHubCompatibleEndpointWithEntityPath { get; } = Environment.GetEnvironmentVariable("eventhubCompatibleEndpointWithEntityPath");
-
-        [Option("-h|--use-http=<hostname>", Description = "Modules talk to iotedged via tcp instead of unix domain socket")]
-        public (bool useHttp, string hostname) UseHttp { get; } = (false, string.Empty);
-
         [Option("-n|--edge-hostname", Description = "Edge device's hostname")]
         public string EdgeHostname { get; } = "quickstart";
 
-        [Option("-p|--password <password>", Description = "Docker registry password")]
-        public string RegistryPassword { get; } = Environment.GetEnvironmentVariable("registryPassword");
-
-        [Option("-r|--registry <hostname>", Description = "Hostname of Docker registry used to pull images")]
-        public string RegistryAddress { get; } = Environment.GetEnvironmentVariable("registryAddress");
+        [Option("-e|--eventhub-endpoint <value>", Description = "Event Hub-compatible endpoint for IoT Hub, including EntityPath")]
+        public string EventHubCompatibleEndpointWithEntityPath { get; } = Environment.GetEnvironmentVariable("eventhubCompatibleEndpointWithEntityPath");
 
         [Option("-t|--tag <value>", Description = "Tag to append when pulling images")]
         public string ImageTag { get; } = Environment.GetEnvironmentVariable("imageTag");
 
-        [Option("-u|--username <username>", Description = "Docker registry username")]
-        public string RegistryUser { get; } = Environment.GetEnvironmentVariable("registryUser");
+        [Option("-c|--connection-string <value>", Description = "IoT Hub connection string (hub-scoped, e.g. iothubowner)")]
+        public string IotHubConnectionString { get; } = Environment.GetEnvironmentVariable("iothubConnectionString");
 
         [Option("--leave-running=<All/Core/None>", CommandOptionType.SingleOrNoValue, Description = "Leave IoT Edge running when the app is finished")]
         public LeaveRunning LeaveRunning { get; } = LeaveRunning.None;
@@ -109,32 +112,32 @@ Defaults:
         [Option("--optimize_for_performance <true/false>", CommandOptionType.SingleValue, Description = "Add OptimizeForPerformance Flag on edgeHub. Only when no deployment is passed.")]
         public bool OptimizeForPerformance { get; } = true;
 
-        [Option("--verify-data-from-module", Description = "Verify if a given module sent data do IoTHub.")]
-        public string VerifyDataFromModule { get; } = "tempSensor";
+        [Option("--proxy <value>", CommandOptionType.SingleValue, Description = "Proxy for IoT Hub connections.")]
+        public (bool useProxy, string proxyUrl) Proxy { get; } = (false, string.Empty);
+
+        [Option("-r|--registry <hostname>", Description = "Hostname of Docker registry used to pull images")]
+        public string RegistryAddress { get; } = Environment.GetEnvironmentVariable("registryAddress");
+
+        [Option("-p|--password <password>", Description = "Docker registry password")]
+        public string RegistryPassword { get; } = Environment.GetEnvironmentVariable("registryPassword");
+
+        [Option("-u|--username <username>", Description = "Docker registry username")]
+        public string RegistryUser { get; } = Environment.GetEnvironmentVariable("registryUser");
 
         [Option("--runtime-log-level", Description = "Change Runtime log level for modules.")]
         public LogLevel RuntimeLogLevel { get; } = LogLevel.Debug;
 
-        [Option("-l|--deployment <filename>", Description = "Deployment json file")]
-        public string DeploymentFileName { get; } = Environment.GetEnvironmentVariable("deployment");
-
-        [Option("--device_ca_cert", Description = "path to the device ca certificate and its chain")]
-        public string DeviceCaCert { get; } = "";
-
-        [Option("--device_ca_pk", Description = "path to the device ca private key file")]
-        public string DeviceCaPk { get; } = "";
-
-        [Option("--trusted_ca_certs", Description = "path to a file containing all the trusted CA")]
-        public string DeviceCaCerts { get; } = "";
-
-        [Option("--clean_up_existing_device <true/false>", CommandOptionType.SingleValue, Description = "Clean up existing device on success.")]
-        public bool CleanUpExistingDeviceOnSuccess { get; } = false;
-
-        [Option("--proxy <value>", CommandOptionType.SingleValue, Description = "Proxy for IoT Hub connections.")]
-        public (bool useProxy, string proxyUrl) Proxy { get; } = (false, string.Empty);
-
         [Option("--upstream-protocol <value>", CommandOptionType.SingleValue, Description = "Upstream protocol for IoT Hub connections.")]
         public (bool overrideUpstreamProtocol, UpstreamProtocolType upstreamProtocol) UpstreamProtocol { get; } = (false, UpstreamProtocolType.Amqp);
+
+        [Option("-h|--use-http=<hostname>", Description = "Modules talk to iotedged via tcp instead of unix domain socket")]
+        public (bool useHttp, string hostname) UseHttp { get; } = (false, string.Empty);
+
+        [Option("--verify-data-from-module", Description = "Verify if a given module sent data do IoTHub.")]
+        public string VerifyDataFromModule { get; } = "tempSensor";
+
+        // ReSharper disable once UnusedMember.Local
+        static int Main(string[] args) => CommandLineApplication.ExecuteAsync<Program>(args).Result;
 
         // ReSharper disable once UnusedMember.Local
         async Task<int> OnExecuteAsync()
@@ -158,31 +161,31 @@ Defaults:
                 switch (this.BootstrapperType)
                 {
                     case BootstrapperType.Iotedged:
+                    {
+                        (bool useProxy, string proxyUrl) = this.Proxy;
+                        Option<string> proxy = useProxy
+                            ? Option.Some(proxyUrl)
+                            : Option.Maybe(Environment.GetEnvironmentVariable("https_proxy"));
+
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                         {
-                            (bool useProxy, string proxyUrl) = this.Proxy;
-                            Option<string> proxy = useProxy
-                                ? Option.Some(proxyUrl)
-                                : Option.Maybe(Environment.GetEnvironmentVariable("https_proxy"));
-
-                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                            {
-                                bootstrapper = new IotedgedWindows(this.BootstrapperArchivePath, credentials, proxy);
-                            }
-                            else
-                            {
-                                (bool useHttp, string hostname) = this.UseHttp;
-                                Option<HttpUris> uris = useHttp
-                                    ? Option.Some(string.IsNullOrEmpty(hostname) ? new HttpUris() : new HttpUris(hostname))
-                                    : Option.None<HttpUris>();
-
-                                (bool overrideUpstreamProtocol, UpstreamProtocolType upstreamProtocol) = this.UpstreamProtocol;
-                                Option<UpstreamProtocolType> upstreamProtocolOption = overrideUpstreamProtocol
-                                    ? Option.Some(upstreamProtocol)
-                                    : Option.None<UpstreamProtocolType>();
-
-                                bootstrapper = new IotedgedLinux(this.BootstrapperArchivePath, credentials, uris, proxy, upstreamProtocolOption);
-                            }
+                            bootstrapper = new IotedgedWindows(this.BootstrapperArchivePath, credentials, proxy);
                         }
+                        else
+                        {
+                            (bool useHttp, string hostname) = this.UseHttp;
+                            Option<HttpUris> uris = useHttp
+                                ? Option.Some(string.IsNullOrEmpty(hostname) ? new HttpUris() : new HttpUris(hostname))
+                                : Option.None<HttpUris>();
+
+                            (bool overrideUpstreamProtocol, UpstreamProtocolType upstreamProtocol) = this.UpstreamProtocol;
+                            Option<UpstreamProtocolType> upstreamProtocolOption = overrideUpstreamProtocol
+                                ? Option.Some(upstreamProtocol)
+                                : Option.None<UpstreamProtocolType>();
+
+                            bootstrapper = new IotedgedLinux(this.BootstrapperArchivePath, credentials, uris, proxy, upstreamProtocolOption);
+                        }
+                    }
                         break;
                     case BootstrapperType.Iotedgectl:
                         bootstrapper = new Iotedgectl(this.BootstrapperArchivePath, credentials);
@@ -192,10 +195,10 @@ Defaults:
                 }
 
                 string connectionString = this.IotHubConnectionString ??
-                    await SecretsHelper.GetSecretFromConfigKey("iotHubConnStrKey");
+                                          await SecretsHelper.GetSecretFromConfigKey("iotHubConnStrKey");
 
                 string endpoint = this.EventHubCompatibleEndpointWithEntityPath ??
-                    await SecretsHelper.GetSecretFromConfigKey("eventHubConnStrKey");
+                                  await SecretsHelper.GetSecretFromConfigKey("eventHubConnStrKey");
 
                 Option<string> deployment = this.DeploymentFileName != null ? Option.Some(this.DeploymentFileName) : Option.None<string>();
 
@@ -213,7 +216,7 @@ Defaults:
                     this.LeaveRunning,
                     this.NoDeployment,
                     this.NoVerify,
-                    this.VerifyDataFromModule, 
+                    this.VerifyDataFromModule,
                     deployment,
                     this.DeviceCaCert,
                     this.DeviceCaPk,
@@ -255,9 +258,9 @@ Defaults:
 
     public enum LeaveRunning
     {
-        All,  // don't clean up anything
+        All, // don't clean up anything
         Core, // remove modules/identities except Edge Agent & Hub
-        None  // iotedgectl stop, uninstall, remove device identity
+        None // iotedgectl stop, uninstall, remove device identity
     }
 
     public enum LogLevel

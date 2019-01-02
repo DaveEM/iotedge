@@ -3,8 +3,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
 {
     public interface ITokenCredentials : IClientCredentials
     {
-        string Token { get; }
-
         bool IsUpdatable { get; }
+
+        string Token { get; }
     }
 }

@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Extensions.Logging;
@@ -13,7 +14,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
     {
         readonly AsyncLock sync;
         long lastDeploymentId;
-        Dictionary<string, CommandRunStats> commandRunStatus;
+        readonly Dictionary<string, CommandRunStats> commandRunStatus;
         readonly int maxRunCount;
         readonly int coolOffTimeUnitInSeconds;
         readonly ISystemTime systemTime;
@@ -21,10 +22,14 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
         public OrderedRetryPlanRunner(int maxRunCount, int coolOffTimeUnitInSeconds, ISystemTime systemTime)
         {
             this.maxRunCount = Preconditions.CheckRange(
-                maxRunCount, 1, nameof(maxRunCount)
+                maxRunCount,
+                1,
+                nameof(maxRunCount)
             );
             this.coolOffTimeUnitInSeconds = Preconditions.CheckRange(
-                coolOffTimeUnitInSeconds, 0, nameof(coolOffTimeUnitInSeconds)
+                coolOffTimeUnitInSeconds,
+                0,
+                nameof(coolOffTimeUnitInSeconds)
             );
             this.systemTime = Preconditions.CheckNotNull(systemTime, nameof(systemTime));
             this.sync = new AsyncLock();
@@ -100,11 +105,11 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
                         {
                             failures = Option.Some(new List<Exception>());
                         }
+
                         failures.ForEach(f => f.Add(ex));
 
                         // since this command failed, record its status
-                        int newRunCount = this.commandRunStatus.ContainsKey(command.Id) ?
-                            this.commandRunStatus[command.Id].RunCount : 0;
+                        int newRunCount = this.commandRunStatus.ContainsKey(command.Id) ? this.commandRunStatus[command.Id].RunCount : 0;
                         this.commandRunStatus[command.Id] = new CommandRunStats(newRunCount + 1, this.systemTime.UtcNow, ex);
                     }
                 }
@@ -115,13 +120,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
             }
         }
 
-        private
         (
             bool shouldRun,
             int runCount,
             TimeSpan coolOffPeriod,
             TimeSpan elapsedTime
-        ) ShouldRunCommand(ICommand command)
+            ) ShouldRunCommand(ICommand command)
         {
             // the command should be run if there's no entry for it in our status dictionary
             if (this.commandRunStatus.ContainsKey(command.Id) == false)
@@ -148,11 +152,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
 
         class CommandRunStats
         {
-            public int RunCount { get; }
-            public DateTime LastRunTimeUtc { get; }
-            public Option<Exception> Exception { get; }
-            public bool LoggedWarning { get; set; }
-
             public static readonly CommandRunStats Default = new CommandRunStats(0, DateTime.MinValue);
 
             public CommandRunStats(int runCount, DateTime lastRunTimeUtc, Exception exception = null)
@@ -162,6 +161,14 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
                 this.Exception = Option.Maybe(exception);
                 this.LoggedWarning = false;
             }
+
+            public Option<Exception> Exception { get; }
+
+            public DateTime LastRunTimeUtc { get; }
+
+            public bool LoggedWarning { get; set; }
+
+            public int RunCount { get; }
         }
 
         static class Events

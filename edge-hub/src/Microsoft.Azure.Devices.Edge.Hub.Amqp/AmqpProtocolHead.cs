@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Amqp.Transport;
@@ -113,6 +114,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
             this.SafeCloseExistingConnections();
         }
 
+        public void Dispose()
+        {
+            this.CloseAsync(CancellationToken.None).Wait();
+        }
+
         void OnAcceptTransport(TransportListener transportListener, TransportAsyncCallbackArgs args)
         {
             if (args.Exception != null)
@@ -135,13 +141,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 
                 // Open the connection async but don't block waiting on it.
                 this.OpenAmqpConnectionAsync(connection, AmqpConstants.DefaultTimeout)
-                    .ContinueWith(task =>
-                    {
-                        if (task.Exception != null)
+                    .ContinueWith(
+                        task =>
                         {
-                            Events.OpenConnectionError(task.Exception);
-                        }
-                    }, TaskContinuationOptions.OnlyOnFaulted);
+                            if (task.Exception != null)
+                            {
+                                Events.OpenConnectionError(task.Exception);
+                            }
+                        },
+                        TaskContinuationOptions.OnlyOnFaulted);
             }
             catch (Exception ex) when (ex.IsFatal() == false)
             {
@@ -219,11 +227,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
         {
             var connectionSnapShot = new List<AmqpConnection>(this.incomingConnectionMap.Values);
             connectionSnapShot.ForEach(conn => conn.SafeClose(new AmqpException(AmqpErrorCode.DetachForced, "Server busy, please retry operation")));
-        }
-
-        public void Dispose()
-        {
-            this.CloseAsync(CancellationToken.None).Wait();
         }
 
         static class Events

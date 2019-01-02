@@ -2,8 +2,11 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
     using System;
+
     using DotNetty.Codecs.Mqtt.Packets;
+
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt.Persistence;
+
     using Newtonsoft.Json;
 
     public class MqttSubscription : ISubscription
@@ -23,9 +26,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 
         public DateTime CreationTime { get; }
 
-        public string TopicFilter { get; }
-
         public QualityOfService QualityOfService { get; }
+
+        public string TopicFilter { get; }
 
         public ISubscription CreateUpdated(QualityOfService qos) => new MqttSubscription(this.CreationTime, this.TopicFilter, qos);
     }

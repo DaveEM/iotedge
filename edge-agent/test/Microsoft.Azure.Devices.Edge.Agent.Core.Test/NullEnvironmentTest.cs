@@ -2,8 +2,9 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 {
     using System.Threading;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
-    using Moq;
+
     using Xunit;
 
     public class NullEnvironmentTest

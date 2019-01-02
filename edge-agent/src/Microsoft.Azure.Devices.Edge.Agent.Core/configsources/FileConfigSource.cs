@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
     using System.Reactive;
     using System.Reactive.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Edge.Agent.Core;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Serde;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
@@ -41,7 +41,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
             this.watcher.EnableRaisingEvents = true;
             Events.Created(this.configFilePath);
         }
-        
+
+        public IConfiguration Configuration { get; }
+
         public static async Task<FileConfigSource> Create(string configFilePath, IConfiguration configuration, ISerde<DeploymentConfigInfo> serde)
         {
             Preconditions.CheckNotNull(serde, nameof(serde));
@@ -62,7 +64,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
             return new FileConfigSource(watcher, initial, configuration, serde);
         }
 
-        public IConfiguration Configuration { get; }
+        public Task<DeploymentConfigInfo> GetDeploymentConfigInfoAsync() => Task.FromResult(this.current.Value);
+
+        public void Dispose()
+        {
+            this.watcherSubscription.Dispose();
+            this.watcher.Dispose();
+        }
 
         static async Task<DeploymentConfigInfo> ReadFromDisk(string path, ISerde<DeploymentConfigInfo> serde)
         {
@@ -99,14 +107,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
             }
         }
 
-        public Task<DeploymentConfigInfo> GetDeploymentConfigInfoAsync() => Task.FromResult(this.current.Value);
-
-        public void Dispose()
-        {
-            this.watcherSubscription.Dispose();
-            this.watcher.Dispose();
-        }
-
         static class Events
         {
             static readonly ILogger Log = Logger.Factory.CreateLogger<FileConfigSource>();
@@ -127,7 +127,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
             {
                 Log.LogError((int)EventIds.NewConfigurationFailed, exception, $"FileConfigSource failed reading new configuration file, {filename}");
             }
-
         }
     }
 }

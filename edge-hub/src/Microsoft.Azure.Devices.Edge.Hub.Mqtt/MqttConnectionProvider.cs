@@ -3,10 +3,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
     using System.Security.Authentication;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.ProtocolGateway.Messaging;
+
     using IDeviceIdentity = Microsoft.Azure.Devices.ProtocolGateway.Identity.IDeviceIdentity;
     using IProtocolGatewayMessage = Microsoft.Azure.Devices.ProtocolGateway.Messaging.IMessage;
 
@@ -37,6 +39,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             return messagingBridge;
         }
 
+        public void Dispose() => this.Dispose(true);
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -44,7 +48,5 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                 this.connectionProvider?.Dispose();
             }
         }
-
-        public void Dispose() => this.Dispose(true);
     }
 }

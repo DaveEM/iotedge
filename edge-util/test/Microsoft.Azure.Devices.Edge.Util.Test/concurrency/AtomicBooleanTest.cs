@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Concurrency
 {
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class AtomicBooleanTest

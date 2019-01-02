@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
 {
     using Microsoft.Azure.Devices.Edge.Storage.Test;
+
     using Xunit;
 
     public class SequentialStoreTest : SequentialStoreTestBase, IClassFixture<TestRocksDbStoreProvider>

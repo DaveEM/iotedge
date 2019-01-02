@@ -3,13 +3,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Routing
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
-    using IMessage = Microsoft.Azure.Devices.Edge.Hub.Core.IMessage;
+
     using IRoutingMessage = Microsoft.Azure.Devices.Routing.Core.IMessage;
     using RoutingMessage = Microsoft.Azure.Devices.Routing.Core.Message;
 
-    public class RoutingMessageConverter : Core.IMessageConverter<IRoutingMessage>
+    public class RoutingMessageConverter : IMessageConverter<IRoutingMessage>
     {
         public IMessage ToMessage(IRoutingMessage routingMessage)
         {

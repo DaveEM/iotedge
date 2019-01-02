@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Query;
     using Microsoft.Azure.Devices.Routing.Core.Util;
     using Microsoft.Azure.Devices.Routing.Core.Util.Concurrency;
@@ -28,10 +29,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
         readonly AsyncLock sync;
         readonly IRoutingService underlying;
 
-        ImmutableDictionary<string, Evaluator> Evaluators => this.evaluators;
-
-        ImmutableDictionary<string, INotifier> Notifiers => this.notifiers;
-
         public FilteringRoutingService(IRoutingService underlying, IRouteStore routeStore, INotifierFactory notifierFactory)
             : this(underlying, routeStore, notifierFactory, RouteCompiler.Instance)
         {
@@ -50,6 +47,10 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
             this.closed = new AtomicBoolean(false);
             this.sync = new AsyncLock();
         }
+
+        ImmutableDictionary<string, Evaluator> Evaluators => this.evaluators;
+
+        ImmutableDictionary<string, INotifier> Notifiers => this.notifiers;
 
         public Task RouteAsync(string hubName, IMessage message) => this.RouteAsync(hubName, new[] { message });
 
@@ -102,14 +103,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
             }
         }
 
-        void CheckClosed()
-        {
-            if (this.closed)
-            {
-                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "{0} is closed.", nameof(FilteringRoutingService)));
-            }
-        }
-
         static async Task CloseEvaluatorAsync(Evaluator evaluator, CancellationToken token)
         {
             try
@@ -119,6 +112,26 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
             catch (Exception ex)
             {
                 Events.EvaluatorCloseFailed(ex);
+            }
+        }
+
+        static async Task CloseNotifierAsync(INotifier notifier, CancellationToken token)
+        {
+            try
+            {
+                await notifier.CloseAsync(token);
+            }
+            catch (Exception ex)
+            {
+                Events.NotifierCloseFailed(ex);
+            }
+        }
+
+        void CheckClosed()
+        {
+            if (this.closed)
+            {
+                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "{0} is closed.", nameof(FilteringRoutingService)));
             }
         }
 
@@ -151,6 +164,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
                     }
                 }
             }
+
             return evaluator;
         }
 
@@ -228,18 +242,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
             catch (Exception ex) when (!ex.IsFatal())
             {
                 Events.EvaluatorRemoveFailed(ex);
-            }
-        }
-
-        static async Task CloseNotifierAsync(INotifier notifier, CancellationToken token)
-        {
-            try
-            {
-                await notifier.CloseAsync(token);
-            }
-            catch (Exception ex)
-            {
-                Events.NotifierCloseFailed(ex);
             }
         }
 

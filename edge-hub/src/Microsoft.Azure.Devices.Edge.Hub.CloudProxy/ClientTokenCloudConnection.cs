@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Cloud;
@@ -10,6 +11,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
 
     /// <summary>
@@ -48,6 +50,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
                 operationTimeout)
         {
         }
+
+        protected override bool CallbacksEnabled => this.callbacksEnabled;
 
         public static async Task<ClientTokenCloudConnection> Create(
             ITokenCredentials tokenCredentials,
@@ -155,9 +159,21 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
             }
         }
 
-        protected override bool CallbacksEnabled => this.callbacksEnabled;
-
         protected override Option<ICloudProxy> GetCloudProxy() => this.cloudProxy;
+
+        // Checks if the token expires too soon
+        static bool IsTokenUsable(string hostname, string token)
+        {
+            try
+            {
+                return TokenHelper.GetTokenExpiryTimeRemaining(hostname, token) > TokenExpiryBuffer;
+            }
+            catch (Exception e)
+            {
+                Events.ErrorCheckingTokenUsable(e);
+                return false;
+            }
+        }
 
         /// <summary>
         /// If the existing Identity has a usable token, then use it.
@@ -224,20 +240,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
             }
         }
 
-        // Checks if the token expires too soon
-        static bool IsTokenUsable(string hostname, string token)
-        {
-            try
-            {
-                return TokenHelper.GetTokenExpiryTimeRemaining(hostname, token) > TokenExpiryBuffer;
-            }
-            catch (Exception e)
-            {
-                Events.ErrorCheckingTokenUsable(e);
-                return false;
-            }
-        }
-
         class ClientTokenBasedTokenProvider : ITokenProvider
         {
             readonly ClientTokenCloudConnection cloudConnection;
@@ -283,6 +285,17 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
                 ErrorCheckingTokenUsability
             }
 
+            public static void ErrorCheckingTokenUsable(Exception ex)
+            {
+                Log.LogDebug((int)EventIds.ErrorCheckingTokenUsability, ex, "Error checking if token is usable.");
+            }
+
+            public static void TokenNotUsable(IIdentity identity, string newToken)
+            {
+                TimeSpan timeRemaining = TokenHelper.GetTokenExpiryTimeRemaining(identity.IotHubHostName, newToken);
+                Log.LogDebug((int)EventIds.ObtainedNewToken, Invariant($"Token received for client {identity.Id} expires in {timeRemaining}, and so is not usable. Getting a fresh token..."));
+            }
+
             internal static void GetNewToken(string id)
             {
                 Log.LogDebug((int)EventIds.CreateNewToken, Invariant($"Getting new token for {id}."));
@@ -317,17 +330,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
             internal static void ErrorRenewingToken(Exception ex)
             {
                 Log.LogDebug((int)EventIds.ErrorRenewingToken, ex, "Critical Error trying to renew Token.");
-            }
-
-            public static void ErrorCheckingTokenUsable(Exception ex)
-            {
-                Log.LogDebug((int)EventIds.ErrorCheckingTokenUsability, ex, "Error checking if token is usable.");
-            }
-
-            public static void TokenNotUsable(IIdentity identity, string newToken)
-            {
-                TimeSpan timeRemaining = TokenHelper.GetTokenExpiryTimeRemaining(identity.IotHubHostName, newToken);
-                Log.LogDebug((int)EventIds.ObtainedNewToken, Invariant($"Token received for client {identity.Id} expires in {timeRemaining}, and so is not usable. Getting a fresh token..."));
             }
         }
     }

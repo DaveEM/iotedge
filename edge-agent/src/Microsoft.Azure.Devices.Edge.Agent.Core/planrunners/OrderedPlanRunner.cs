@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
 
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners
                     {
                         failures = Option.Some(new List<Exception>());
                     }
+
                     failures.ForEach(f => f.Add(ex));
                 }
             }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Settings
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Constants = Microsoft.Azure.Devices.Edge.Hub.Amqp.Constants;
 
     public static class AmqpSettingsProvider

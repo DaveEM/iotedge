@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core.Sources
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public class NullSource : Source

@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
 
@@ -32,12 +33,6 @@ namespace Microsoft.Azure.Devices.Edge.Storage
 
         public string EntityName => this.entityStore.EntityName;
 
-        public Task<long> Append(T item) => this.Append(item, CancellationToken.None);
-
-        public Task<bool> RemoveFirst(Func<long, T, Task<bool>> predicate) => this.RemoveFirst(predicate, CancellationToken.None);
-
-        public Task<IEnumerable<(long, T)>> GetBatch(long startingOffset, int batchSize) => this.GetBatch(startingOffset, batchSize, CancellationToken.None);
-
         public static Task<ISequentialStore<T>> Create(IEntityStore<byte[], T> entityStore)
             => Create(entityStore, DefaultHeadOffset);
 
@@ -52,6 +47,12 @@ namespace Microsoft.Azure.Devices.Edge.Storage
             var sequentialStore = new SequentialStore<T>(entityStore, headOffset, tailOffset);
             return sequentialStore;
         }
+
+        public Task<long> Append(T item) => this.Append(item, CancellationToken.None);
+
+        public Task<bool> RemoveFirst(Func<long, T, Task<bool>> predicate) => this.RemoveFirst(predicate, CancellationToken.None);
+
+        public Task<IEnumerable<(long, T)>> GetBatch(long startingOffset, int batchSize) => this.GetBatch(startingOffset, batchSize, CancellationToken.None);
 
         public async Task<long> Append(T item, CancellationToken cancellationToken)
         {
@@ -124,18 +125,18 @@ namespace Microsoft.Azure.Devices.Edge.Storage
             return batch;
         }
 
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
                 this.entityStore?.Dispose();
             }
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
 
         bool IsEmpty() => this.headOffset > this.tailOffset;

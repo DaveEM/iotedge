@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http
 {
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util;

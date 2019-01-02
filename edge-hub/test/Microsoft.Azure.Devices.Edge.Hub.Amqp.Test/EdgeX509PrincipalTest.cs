@@ -2,17 +2,20 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
 {
     using System;
+    using System.Collections.Generic;
     using System.Security.Cryptography.X509Certificates;
-    using Microsoft.Azure.Amqp.Transport;
+    using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp.X509;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
-    using TestCertificateHelper = Microsoft.Azure.Devices.Edge.Util.Test.Common.CertificateHelper;
+
     using Moq;
+
     using Xunit;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
+
+    using TestCertificateHelper = Microsoft.Azure.Devices.Edge.Util.Test.Common.CertificateHelper;
 
     [Unit]
     public class EdgeX509PrincipalTest
@@ -65,7 +68,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             Assert.False(await principal.AuthenticateAsync("   /mid"));
             Assert.False(await principal.AuthenticateAsync("did/mid/blah"));
         }
-    
+
         [Fact]
         public async Task TestAsyncAuthentionReturnsFalse_FailsAsync()
         {
@@ -79,12 +82,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             string deviceId = "myDid";
             string moduleId = "myMid";
 
-            Mock.Get(clientCredentialsFactory).Setup(f => f.GetWithX509Cert(deviceId,
-                                                                            moduleId,
-                                                                            string.Empty,
-                                                                            certificate,
-                                                                            chain))
-                                                                            .Returns(clientCredentials);
+            Mock.Get(clientCredentialsFactory).Setup(
+                    f => f.GetWithX509Cert(
+                        deviceId,
+                        moduleId,
+                        string.Empty,
+                        certificate,
+                        chain))
+                .Returns(clientCredentials);
             Mock.Get(authenticator).Setup(a => a.AuthenticateAsync(clientCredentials)).ReturnsAsync(false);
 
             Assert.False(await principal.AuthenticateAsync($"{deviceId}/{moduleId}"));
@@ -103,12 +108,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             string deviceId = "myDid";
             string moduleId = string.Empty;
 
-            Mock.Get(clientCredentialsFactory).Setup(f => f.GetWithX509Cert(deviceId,
-                                                                            moduleId,
-                                                                            string.Empty,
-                                                                            certificate,
-                                                                            chain))
-                                                                            .Returns(clientCredentials);
+            Mock.Get(clientCredentialsFactory).Setup(
+                    f => f.GetWithX509Cert(
+                        deviceId,
+                        moduleId,
+                        string.Empty,
+                        certificate,
+                        chain))
+                .Returns(clientCredentials);
             Mock.Get(authenticator).Setup(a => a.AuthenticateAsync(clientCredentials)).ReturnsAsync(true);
 
             Assert.True(await principal.AuthenticateAsync($"{deviceId}"));
@@ -127,12 +134,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             string deviceId = "myDid";
             string moduleId = "myMid";
 
-            Mock.Get(clientCredentialsFactory).Setup(f => f.GetWithX509Cert(deviceId,
-                                                                            moduleId,
-                                                                            string.Empty,
-                                                                            certificate,
-                                                                            chain))
-                                                                            .Returns(clientCredentials);
+            Mock.Get(clientCredentialsFactory).Setup(
+                    f => f.GetWithX509Cert(
+                        deviceId,
+                        moduleId,
+                        string.Empty,
+                        certificate,
+                        chain))
+                .Returns(clientCredentials);
             Mock.Get(authenticator).Setup(a => a.AuthenticateAsync(clientCredentials)).ReturnsAsync(true);
 
             Assert.True(await principal.AuthenticateAsync($"{deviceId}/{moduleId}"));

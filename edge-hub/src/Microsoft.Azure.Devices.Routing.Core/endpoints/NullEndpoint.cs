@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
@@ -34,14 +35,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
         {
             readonly NullEndpoint endpoint;
 
-            public Endpoint Endpoint => this.endpoint;
-
-            public ITransientErrorDetectionStrategy ErrorDetectionStrategy => new ErrorDetectionStrategy(_ => true);
-
             public Processor(NullEndpoint endpoint)
             {
                 this.endpoint = Preconditions.CheckNotNull(endpoint);
             }
+
+            public Endpoint Endpoint => this.endpoint;
+
+            public ITransientErrorDetectionStrategy ErrorDetectionStrategy => new ErrorDetectionStrategy(_ => true);
 
             public Task<ISinkResult<IMessage>> ProcessAsync(IMessage message, CancellationToken token) =>
                 this.ProcessAsync(new[] { message }, token);

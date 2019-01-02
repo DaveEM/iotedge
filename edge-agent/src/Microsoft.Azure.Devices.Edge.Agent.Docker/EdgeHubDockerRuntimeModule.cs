@@ -4,22 +4,44 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class EdgeHubDockerRuntimeModule : DockerRuntimeModule, IEdgeHubModule
     {
         public EdgeHubDockerRuntimeModule(
-            ModuleStatus desiredStatus, RestartPolicy restartPolicy, DockerConfig config, int exitCode,
-            string statusDescription, DateTime lastStartTime,
-            DateTime lastExitTime, int restartCount, DateTime lastRestartTime,
-            ModuleStatus runtimeStatus, ConfigurationInfo configuration,
-            IDictionary<string, EnvVal> env, string version = ""
+            ModuleStatus desiredStatus,
+            RestartPolicy restartPolicy,
+            DockerConfig config,
+            int exitCode,
+            string statusDescription,
+            DateTime lastStartTime,
+            DateTime lastExitTime,
+            int restartCount,
+            DateTime lastRestartTime,
+            ModuleStatus runtimeStatus,
+            ConfigurationInfo configuration,
+            IDictionary<string, EnvVal> env,
+            string version = ""
         )
-            : base(Core.Constants.EdgeHubModuleName, version, desiredStatus, restartPolicy, config,
-                exitCode, statusDescription, lastStartTime, lastExitTime,
-                restartCount, lastRestartTime, runtimeStatus, configuration, env)
+            : base(
+                Core.Constants.EdgeHubModuleName,
+                version,
+                desiredStatus,
+                restartPolicy,
+                config,
+                exitCode,
+                statusDescription,
+                lastStartTime,
+                lastExitTime,
+                restartCount,
+                lastRestartTime,
+                runtimeStatus,
+                configuration,
+                env)
         {
             // You maybe wondering why we are setting this here again even though
             // the base class does this assignment. This is due to a behavior
@@ -33,16 +55,35 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
 
         [JsonConstructor]
         EdgeHubDockerRuntimeModule(
-            string type, ModuleStatus status,
-            RestartPolicy restartPolicy, DockerConfig config, int? exitCode,
-            string statusDescription, DateTime lastStartTimeUtc,
-            DateTime lastExitTimeUtc, int restartCount,
-            DateTime lastRestartTimeUtc, ModuleStatus runtimeStatus,
-            ConfigurationInfo configurationInfo, IDictionary<string, EnvVal> env, string version = ""
+            string type,
+            ModuleStatus status,
+            RestartPolicy restartPolicy,
+            DockerConfig config,
+            int? exitCode,
+            string statusDescription,
+            DateTime lastStartTimeUtc,
+            DateTime lastExitTimeUtc,
+            int restartCount,
+            DateTime lastRestartTimeUtc,
+            ModuleStatus runtimeStatus,
+            ConfigurationInfo configurationInfo,
+            IDictionary<string, EnvVal> env,
+            string version = ""
         )
-            : this(status, restartPolicy, config, exitCode ?? 0,
-                  statusDescription, lastStartTimeUtc, lastExitTimeUtc,
-                  restartCount, lastRestartTimeUtc, runtimeStatus, configurationInfo, env, version)
+            : this(
+                status,
+                restartPolicy,
+                config,
+                exitCode ?? 0,
+                statusDescription,
+                lastStartTimeUtc,
+                lastExitTimeUtc,
+                restartCount,
+                lastRestartTimeUtc,
+                runtimeStatus,
+                configurationInfo,
+                env,
+                version)
         {
             Preconditions.CheckArgument(type?.Equals("docker") ?? false);
         }
@@ -59,8 +100,17 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
         public override string Version { get; }
 
         public override IModule WithRuntimeStatus(ModuleStatus newStatus) => new EdgeHubDockerRuntimeModule(
-            this.DesiredStatus, this.RestartPolicy, this.Config, this.ExitCode, this.StatusDescription,
-            this.LastStartTimeUtc, this.LastExitTimeUtc, this.RestartCount, this.LastRestartTimeUtc,
-            newStatus, this.ConfigurationInfo, this.Env);
+            this.DesiredStatus,
+            this.RestartPolicy,
+            this.Config,
+            this.ExitCode,
+            this.StatusDescription,
+            this.LastStartTimeUtc,
+            this.LastExitTimeUtc,
+            this.RestartCount,
+            this.LastRestartTimeUtc,
+            newStatus,
+            this.ConfigurationInfo,
+            this.Env);
     }
 }

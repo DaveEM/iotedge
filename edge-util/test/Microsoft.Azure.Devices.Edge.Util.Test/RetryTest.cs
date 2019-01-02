@@ -2,10 +2,12 @@
 namespace Microsoft.Azure.Devices.Edge.Util.Test
 {
     using System;
-    using Microsoft.Azure.Devices.Edge.Util.Test.Common;
-    using Xunit;
     using System.Threading;
     using System.Threading.Tasks;
+
+    using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
+    using Xunit;
 
     [Unit]
     public class RetryTest
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
         [Fact]
         public async Task RetryThrowsIfFuncNeverReturnsValidResult()
         {
-            Func<Task<string>> func = () => Task.FromResult(String.Empty);
+            Func<Task<string>> func = () => Task.FromResult(string.Empty);
             Func<string, bool> isValid = (val) => val == "Foo";
             TimeSpan retryInterval = TimeSpan.FromMilliseconds(10);
 
@@ -44,7 +46,11 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
         public async Task RetryWithoutValidFuncReturns1stResult()
         {
             int counter = 0;
-            Func<Task<string>> func = () => { ++counter; return Task.FromResult<string>("Foo"); };
+            Func<Task<string>> func = () =>
+            {
+                ++counter;
+                return Task.FromResult<string>("Foo");
+            };
             TimeSpan retryInterval = TimeSpan.FromMilliseconds(2);
 
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))

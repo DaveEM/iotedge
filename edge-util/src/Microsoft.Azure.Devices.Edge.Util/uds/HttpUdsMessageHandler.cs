@@ -7,11 +7,12 @@ namespace Microsoft.Azure.Devices.Edge.Util.Uds
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Extensions.Logging;
 
-    internal class HttpUdsMessageHandler : HttpMessageHandler
+    class HttpUdsMessageHandler : HttpMessageHandler
     {
-        private readonly Uri providerUri;
+        readonly Uri providerUri;
 
         public HttpUdsMessageHandler(Uri providerUri)
         {
@@ -39,7 +40,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Uds
             return response;
         }
 
-        private async Task<Socket> GetConnectedSocketAsync()
+        async Task<Socket> GetConnectedSocketAsync()
         {
             var endpoint = new UnixDomainSocketEndPoint(this.providerUri.LocalPath);
             var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);

@@ -3,8 +3,10 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
 {
     using System;
     using System.IO;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Unit]
@@ -20,6 +22,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
             {
                 Directory.Delete(this.rocksDbFolder);
             }
+
             Directory.CreateDirectory(this.rocksDbFolder);
         }
 

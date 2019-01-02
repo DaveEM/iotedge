@@ -3,7 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
 {
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::Docker.DotNet;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
 

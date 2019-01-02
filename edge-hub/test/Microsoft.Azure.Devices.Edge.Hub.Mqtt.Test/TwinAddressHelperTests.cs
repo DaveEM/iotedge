@@ -3,8 +3,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt.Test
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Extensions.Primitives;
+
     using Xunit;
 
     [Unit]
@@ -23,8 +25,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt.Test
         [InlineData("$iothub/methods/res/200/?$rid=1&", true, TwinAddressHelper.Operation.DirectMethodResponse, "200", new[] { "$rid", "1" })]
         [InlineData("$iothub/methods/res/200/?$rid=1&=", true, TwinAddressHelper.Operation.DirectMethodResponse, "200", new[] { "$rid", "1", "", "" })]
         [InlineData("$iothub/methods/res/200/?$rid=1&=value", true, TwinAddressHelper.Operation.DirectMethodResponse, "200", new[] { "$rid", "1", "", "value" })]
-        public void TwinTryParseOperationTests(string input, bool expectedOutcome, TwinAddressHelper.Operation expectedOperation,
-            string expectedSubresource, string[] expectedProperties)
+        public void TwinTryParseOperationTests(
+            string input,
+            bool expectedOutcome,
+            TwinAddressHelper.Operation expectedOperation,
+            string expectedSubresource,
+            string[] expectedProperties)
         {
             var properties = new Dictionary<StringSegment, StringSegment>();
             TwinAddressHelper.Operation operation;
@@ -55,6 +61,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt.Test
             {
                 expectedPropertyMap.Add(keyFunc(pairs[i]), valueFunc(pairs[i + 1]));
             }
+
             return expectedPropertyMap;
         }
     }

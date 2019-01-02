@@ -4,8 +4,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
     using System;
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Json;
+
     using Newtonsoft.Json;
 
     public class ServiceIdentity : IEquatable<ServiceIdentity>
@@ -38,30 +40,30 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
             this.Status = status;
         }
 
-        [JsonIgnore]
-        public string Id { get; }
+        [JsonProperty("authentication")]
+        public ServiceAuthentication Authentication { get; }
+
+        [JsonProperty("capabilities")]
+        public IEnumerable<string> Capabilities { get; }
 
         [JsonProperty("deviceId")]
         public string DeviceId { get; }
+
+        [JsonProperty("generationId")]
+        public string GenerationId { get; }
+
+        [JsonIgnore]
+        public string Id { get; }
+
+        [JsonIgnore]
+        public bool IsModule => this.ModuleId.HasValue;
 
         [JsonProperty("moduleId")]
         [JsonConverter(typeof(OptionConverter<string>))]
         public Option<string> ModuleId { get; }
 
-        [JsonProperty("capabilities")]
-        public IEnumerable<string> Capabilities { get; }
-
-        [JsonIgnore]
-        public bool IsModule => this.ModuleId.HasValue;
-
-        [JsonProperty("authentication")]
-        public ServiceAuthentication Authentication { get; }
-
         [JsonProperty("status")]
         public ServiceIdentityStatus Status { get; }
-
-        [JsonProperty("generationId")]
-        public string GenerationId { get; }
 
         public override bool Equals(object obj)
         {
@@ -96,12 +98,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
             if (ReferenceEquals(this, other))
                 return true;
             return string.Equals(this.Id, other.Id)
-                && string.Equals(this.DeviceId, other.DeviceId)
-                && this.ModuleId.Equals(other.ModuleId)
-                && this.Capabilities.SequenceEqual(other.Capabilities)
-                && Equals(this.Authentication, other.Authentication)
-                && this.Status == other.Status
-                && string.Equals(this.GenerationId, other.GenerationId);
+                   && string.Equals(this.DeviceId, other.DeviceId)
+                   && this.ModuleId.Equals(other.ModuleId)
+                   && this.Capabilities.SequenceEqual(other.Capabilities)
+                   && Equals(this.Authentication, other.Authentication)
+                   && this.Status == other.Status
+                   && string.Equals(this.GenerationId, other.GenerationId);
         }
     }
 }

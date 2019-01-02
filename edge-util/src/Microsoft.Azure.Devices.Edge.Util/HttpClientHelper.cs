@@ -4,13 +4,14 @@ namespace Microsoft.Azure.Devices.Edge.Util
     using System;
     using System.Linq;
     using System.Net.Http;
+
     using Microsoft.Azure.Devices.Edge.Util.Uds;
 
     public class HttpClientHelper
     {
-        private const string HttpScheme = "http";
-        private const string HttpsScheme = "https";
-        private const string UnixScheme = "unix";
+        const string HttpScheme = "http";
+        const string HttpsScheme = "https";
+        const string UnixScheme = "unix";
 
         public static HttpClient GetHttpClient(Uri serverUri)
         {

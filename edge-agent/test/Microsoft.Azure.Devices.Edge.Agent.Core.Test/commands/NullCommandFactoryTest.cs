@@ -2,9 +2,12 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.commands
 {
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Commands;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class NullCommandFactoryTest

@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Edgelet
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Edgelet.GeneratedCode;
 
     public interface IModuleManager

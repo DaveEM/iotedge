@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
@@ -36,24 +37,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
             this.deviceConnectivityManager.DeviceDisconnected += this.HandleDeviceDisconnectedEvent;
         }
 
-        void HandleDeviceConnectedEvent(object sender, EventArgs eventArgs)
-        {
-            if (!this.isConnected.GetAndSet(true))
-            {
-                Events.ChangingStatus(this.isConnected, this.identity);
-                this.connectionStatusChangedHandler?.Invoke(ConnectionStatus.Connected, ConnectionStatusChangeReason.Connection_Ok);
-            }
-        }
-
-        void HandleDeviceDisconnectedEvent(object sender, EventArgs eventArgs)
-        {
-            if (this.isConnected.GetAndSet(false))
-            {
-                Events.ChangingStatus(this.isConnected, this.identity);
-                this.connectionStatusChangedHandler?.Invoke(ConnectionStatus.Disconnected, ConnectionStatusChangeReason.No_Network);
-            }
-        }
-
         public bool IsActive => this.underlyingClient.IsActive;
 
         public async Task CloseAsync()
@@ -79,9 +62,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
 
         public Task OpenAsync() => this.InvokeFunc(() => this.underlyingClient.OpenAsync(), nameof(this.OpenAsync));
 
-        public Task SendEventAsync(Client.Message message) => this.InvokeFunc(() => this.underlyingClient.SendEventAsync(message), nameof(this.SendEventAsync));
+        public Task SendEventAsync(Message message) => this.InvokeFunc(() => this.underlyingClient.SendEventAsync(message), nameof(this.SendEventAsync));
 
-        public Task SendEventBatchAsync(IEnumerable<Client.Message> messages) =>
+        public Task SendEventBatchAsync(IEnumerable<Message> messages) =>
             this.InvokeFunc(() => this.underlyingClient.SendEventBatchAsync(messages), nameof(this.SendEventBatchAsync));
 
         public void SetConnectionStatusChangedHandler(ConnectionStatusChangesHandler handler)
@@ -108,6 +91,24 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
         public void Dispose()
         {
             this.underlyingClient?.Dispose();
+        }
+
+        void HandleDeviceConnectedEvent(object sender, EventArgs eventArgs)
+        {
+            if (!this.isConnected.GetAndSet(true))
+            {
+                Events.ChangingStatus(this.isConnected, this.identity);
+                this.connectionStatusChangedHandler?.Invoke(ConnectionStatus.Connected, ConnectionStatusChangeReason.Connection_Ok);
+            }
+        }
+
+        void HandleDeviceDisconnectedEvent(object sender, EventArgs eventArgs)
+        {
+            if (this.isConnected.GetAndSet(false))
+            {
+                Events.ChangingStatus(this.isConnected, this.identity);
+                this.connectionStatusChangedHandler?.Invoke(ConnectionStatus.Disconnected, ConnectionStatusChangeReason.No_Network);
+            }
         }
 
         void InternalConnectionStatusChangedHandler(ConnectionStatus status, ConnectionStatusChangeReason reason)

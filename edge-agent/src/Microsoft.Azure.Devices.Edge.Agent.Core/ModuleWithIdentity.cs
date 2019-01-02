@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core
 {
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class ModuleWithIdentity : IModuleWithIdentity
@@ -20,7 +21,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
         public IModuleIdentity ModuleIdentity => this.moduleIdentity;
 
         public override bool Equals(object obj) => this.Equals(obj as ModuleWithIdentity);
-        
+
         public virtual bool Equals(IModuleWithIdentity other)
         {
             if (ReferenceEquals(null, other))

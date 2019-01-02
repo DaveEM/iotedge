@@ -2,16 +2,17 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Http
 {
     using System;
+    using System.Text;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using System.Text;
 
     public class MethodRequest
     {
         const int DeviceMethodDefaultResponseTimeoutInSeconds = 30;
         const int DeviceMethodDefaultConnectTimeoutInSeconds = 0;
         byte[] payloadBytes;
-        
+
         public MethodRequest(string methodName, JRaw payload)
             : this(methodName, payload, DeviceMethodDefaultResponseTimeoutInSeconds, DeviceMethodDefaultConnectTimeoutInSeconds)
         {
@@ -26,23 +27,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http
             this.ConnectTimeoutInSeconds = connectTimeoutInSeconds ?? DeviceMethodDefaultConnectTimeoutInSeconds;
         }
 
+        [JsonIgnore]
+        public TimeSpan ConnectTimeout => TimeSpan.FromSeconds(this.ConnectTimeoutInSeconds);
+
         [JsonProperty("methodName", Required = Required.Always)]
         public string MethodName { get; }
 
         [JsonProperty("payload")]
         public JRaw Payload { get; }
-
-        [JsonProperty("responseTimeoutInSeconds")]
-        internal int ResponseTimeoutInSeconds { get; }
-
-        [JsonProperty("connectTimeoutInSeconds")]
-        internal int ConnectTimeoutInSeconds { get; }
-
-        [JsonIgnore]
-        public TimeSpan ResponseTimeout => TimeSpan.FromSeconds(this.ResponseTimeoutInSeconds);
-
-        [JsonIgnore]
-        public TimeSpan ConnectTimeout => TimeSpan.FromSeconds(this.ConnectTimeoutInSeconds);
 
         [JsonIgnore]
         public byte[] PayloadBytes
@@ -58,5 +50,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http
                 return this.payloadBytes;
             }
         }
+
+        [JsonIgnore]
+        public TimeSpan ResponseTimeout => TimeSpan.FromSeconds(this.ResponseTimeoutInSeconds);
+
+        [JsonProperty("connectTimeoutInSeconds")]
+        internal int ConnectTimeoutInSeconds { get; }
+
+        [JsonProperty("responseTimeoutInSeconds")]
+        internal int ResponseTimeoutInSeconds { get; }
     }
 }

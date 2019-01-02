@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
@@ -25,6 +26,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
             {
                 amqpMessage.MessageAnnotations.Map["status"] = status;
             }
+
             return amqpMessage;
         }
 

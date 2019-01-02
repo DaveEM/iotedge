@@ -14,14 +14,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
             this.IsUpdatable = updatable;
         }
 
-        public IIdentity Identity { get; }
+        public AuthenticationType AuthenticationType { get; }
 
-        public string Token { get; }
+        public IIdentity Identity { get; }
 
         public bool IsUpdatable { get; }
 
-        public AuthenticationType AuthenticationType { get; }
-
         public string ProductInfo { get; }
+
+        public string Token { get; }
     }
 }

@@ -5,8 +5,10 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
+
     using RocksDbSharp;
 
     /// <summary>

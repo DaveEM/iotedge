@@ -6,27 +6,31 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Routing.Core.Checkpointers;
     using Microsoft.Azure.Devices.Routing.Core.Endpoints;
     using Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine;
-    using Microsoft.Azure.Devices.Routing.Core.Util;
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
+    using Microsoft.Azure.Devices.Routing.Core.Util;
+
     using Moq;
+
     using Xunit;
 
     [ExcludeFromCodeCoverage]
     public class SyncEndpointExecutorTest : RoutingUnitTestBase
     {
         static readonly IMessage Default = new Message(TelemetryMessageSource.Instance, new byte[0], new Dictionary<string, string>());
-        static readonly IMessage Message1 = new Message(TelemetryMessageSource.Instance, new byte[] {1, 2, 3}, new Dictionary<string, string> { {"key1", "value1"}, {"key2", "value2"} }, 1);
-        static readonly IMessage Message2 = new Message(TelemetryMessageSource.Instance, new byte[] {1, 2, 3}, new Dictionary<string, string> { {"key1", "value1"}, {"key2", "value2"} }, 2);
-        static readonly IMessage Message3 = new Message(TelemetryMessageSource.Instance, new byte[] {2, 3, 1}, new Dictionary<string, string> { {"key1", "value1"}, {"key2", "value2"} }, 3);
+        static readonly IMessage Message1 = new Message(TelemetryMessageSource.Instance, new byte[] { 1, 2, 3 }, new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } }, 1);
+        static readonly IMessage Message2 = new Message(TelemetryMessageSource.Instance, new byte[] { 1, 2, 3 }, new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } }, 2);
+        static readonly IMessage Message3 = new Message(TelemetryMessageSource.Instance, new byte[] { 2, 3, 1 }, new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } }, 3);
 
         static readonly SyncEndpointExecutorFactory Factory = new SyncEndpointExecutorFactory(TestConstants.DefaultConfig);
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public void TestConstructor()
         {
             Assert.Throws(typeof(ArgumentNullException), () => new SyncEndpointExecutor(null, null));
@@ -34,7 +38,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             Assert.Throws(typeof(ArgumentNullException), () => new SyncEndpointExecutor(new TestEndpoint("id"), null));
         }
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task SmokeTest()
         {
             var endpoint = new TestEndpoint("id");
@@ -50,6 +55,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             {
                 await executor.Invoke(msg);
             }
+
             await executor.CloseAsync();
             Assert.Equal(3, endpoint.N);
             Assert.Equal(expected, endpoint.Processed);
@@ -57,7 +63,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             Assert.Equal(3, executor.Status.CheckpointerStatus.Proposed);
         }
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task TestCancellation()
         {
             var retryStrategy = new FixedInterval(10, TimeSpan.FromSeconds(1));
@@ -77,7 +84,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             Assert.True(running.IsCompleted);
         }
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task TestClose()
         {
             var endpoint = new TestEndpoint("id");
@@ -95,7 +103,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             await Assert.ThrowsAsync<InvalidOperationException>(() => executor.SetEndpoint(endpoint));
         }
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task TestSetEndpoint()
         {
             var endpoint1 = new TestEndpoint("id1");
@@ -111,26 +120,27 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             await executor.Invoke(Message1);
             await executor.Invoke(Message1);
 
-            Assert.Equal(new List<IMessage> {Message1, Message1}, endpoint1.Processed);
+            Assert.Equal(new List<IMessage> { Message1, Message1 }, endpoint1.Processed);
             Assert.Equal(new List<IMessage>(), endpoint2.Processed);
             Assert.Equal(new List<IMessage>(), endpoint3.Processed);
 
             await executor.SetEndpoint(endpoint2);
-            Assert.Equal(new List<IMessage> {Message1, Message1}, endpoint1.Processed);
+            Assert.Equal(new List<IMessage> { Message1, Message1 }, endpoint1.Processed);
             Assert.Equal(new List<IMessage>(), endpoint2.Processed);
             Assert.Equal(new List<IMessage>(), endpoint3.Processed);
 
             await executor.Invoke(Message2);
             await executor.Invoke(Message3);
 
-            Assert.Equal(new List<IMessage> {Message1, Message1}, endpoint1.Processed);
-            Assert.Equal(new List<IMessage> {Message2, Message3}, endpoint2.Processed);
+            Assert.Equal(new List<IMessage> { Message1, Message1 }, endpoint1.Processed);
+            Assert.Equal(new List<IMessage> { Message2, Message3 }, endpoint2.Processed);
             Assert.Equal(new List<IMessage>(), endpoint3.Processed);
 
             await executor.CloseAsync();
         }
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task TestCheckpoint()
         {
             var endpoint1 = new TestEndpoint("id1");
@@ -142,7 +152,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             IEndpointExecutor executor1 = new SyncEndpointExecutor(endpoint1, checkpointer.Object);
             await executor1.Invoke(Message1);
 
-            checkpointer.Verify(c => c.CommitAsync(new [] { Message1 }, new IMessage[0], It.IsAny<Option<DateTime>>(), It.IsAny<Option<DateTime>>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
+            checkpointer.Verify(c => c.CommitAsync(new[] { Message1 }, new IMessage[0], It.IsAny<Option<DateTime>>(), It.IsAny<Option<DateTime>>(), It.IsAny<CancellationToken>()), Times.Exactly(1));
 
             var endpoint2 = new NullEndpoint("id2");
             var checkpointer2 = new Mock<ICheckpointer>();
@@ -159,7 +169,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             await executor2.CloseAsync();
         }
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task TestProcessorFailure()
         {
             var endpoint1 = new FailedEndpoint("id1", new OperationCanceledException());

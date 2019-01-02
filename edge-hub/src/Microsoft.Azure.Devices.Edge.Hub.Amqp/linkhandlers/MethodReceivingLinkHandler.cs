@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
@@ -26,12 +27,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
         {
         }
 
+        public override string CorrelationId =>
+            AmqpConnectionUtils.GetCorrelationId(this.Link);
+
         public override LinkType Type => LinkType.MethodReceiving;
 
         protected override QualityOfService QualityOfService => QualityOfService.AtMostOnce;
-
-        public override string CorrelationId =>
-            AmqpConnectionUtils.GetCorrelationId(this.Link);
 
         protected override async Task OnMessageReceived(AmqpMessage amqpMessage)
         {

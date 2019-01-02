@@ -6,15 +6,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
 
     public class NullEnvironment : IEnvironment
     {
-        public static NullEnvironment Instance { get; } = new NullEnvironment();
-
-        public string OperatingSystemType => string.Empty;
-
-        public string Architecture => string.Empty;
-
         NullEnvironment()
         {
         }
+
+        public static NullEnvironment Instance { get; } = new NullEnvironment();
+
+        public string Architecture => string.Empty;
+
+        public string OperatingSystemType => string.Empty;
 
         public Task<ModuleSet> GetModulesAsync(CancellationToken token) => Task.FromResult(ModuleSet.Empty);
 

@@ -4,14 +4,16 @@ namespace Microsoft.Azure.Devices.Routing.Core.Checkpointers
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using static System.FormattableString;
     using System.Globalization;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
     using Microsoft.Azure.Devices.Routing.Core.Util.Concurrency;
     using Microsoft.Extensions.Logging;
+
+    using static System.FormattableString;
 
     public class Checkpointer : ICheckpointer
     {
@@ -20,18 +22,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Checkpointers
 
         readonly AtomicBoolean closed;
         readonly ICheckpointStore store;
-
-        public string Id { get; }
-
-        public long Offset { get; private set; }
-
-        public Option<DateTime> LastFailedRevivalTime { get; private set; }
-
-        public Option<DateTime> UnhealthySince { get; private set; }
-
-        public long Proposed { get; private set; }
-
-        public bool HasOutstanding => this.Offset < this.Proposed;
 
         Checkpointer(string id, ICheckpointStore store, CheckpointData checkpointData)
         {
@@ -43,6 +33,18 @@ namespace Microsoft.Azure.Devices.Routing.Core.Checkpointers
             this.Proposed = checkpointData.Offset;
             this.closed = new AtomicBoolean(false);
         }
+
+        public bool HasOutstanding => this.Offset < this.Proposed;
+
+        public string Id { get; }
+
+        public Option<DateTime> LastFailedRevivalTime { get; private set; }
+
+        public long Offset { get; private set; }
+
+        public long Proposed { get; private set; }
+
+        public Option<DateTime> UnhealthySince { get; private set; }
 
         public static async Task<Checkpointer> CreateAsync(string id, ICheckpointStore store)
         {

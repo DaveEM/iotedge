@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Routing.Core
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public class RouteStore : IRouteStore
@@ -27,10 +28,11 @@ namespace Microsoft.Azure.Devices.Routing.Core
         }
 
         public Task<RouterConfig> GetRouterConfigAsync(string iotHubName, CancellationToken token) =>
-            Task.FromResult(new RouterConfig(
-                this.endpoints.GetOrElse(iotHubName, EmptyEndpoints),
-                this.routes.GetOrElse(iotHubName, EmptyRoutes),
-                Option.None<Route>()
+            Task.FromResult(
+                new RouterConfig(
+                    this.endpoints.GetOrElse(iotHubName, EmptyEndpoints),
+                    this.routes.GetOrElse(iotHubName, EmptyRoutes),
+                    Option.None<Route>()
                 )
             );
     }

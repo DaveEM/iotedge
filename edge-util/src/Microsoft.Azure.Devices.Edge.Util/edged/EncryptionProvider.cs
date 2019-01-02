@@ -4,7 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Edged
     using System;
     using System.IO;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Edge.Util;
+
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
 
     public class EncryptionProvider : IEncryptionProvider
@@ -18,10 +18,6 @@ namespace Microsoft.Azure.Devices.Edge.Util.Edged
             this.initializationVector = initializationVector;
             this.workloadClient = new WorkloadClient(workloadUri, apiVersion, moduleId, moduleGenerationid);
         }
-
-        public Task<string> DecryptAsync(string encryptedText) => this.workloadClient.DecryptAsync(this.initializationVector, encryptedText);
-
-        public Task<string> EncryptAsync(string plainText) => this.workloadClient.EncryptAsync(this.initializationVector, plainText);
 
         public static async Task<EncryptionProvider> CreateAsync(string storagePath, Uri workloadUri, string edgeletWorkloadApiVersion, string moduleId, string genId, string initializationVectorFileName)
         {
@@ -42,5 +38,9 @@ namespace Microsoft.Azure.Devices.Edge.Util.Edged
 
             return new EncryptionProvider(workloadUri, edgeletWorkloadApiVersion, moduleId, genId, iv);
         }
+
+        public Task<string> DecryptAsync(string encryptedText) => this.workloadClient.DecryptAsync(this.initializationVector, encryptedText);
+
+        public Task<string> EncryptAsync(string plainText) => this.workloadClient.EncryptAsync(this.initializationVector, plainText);
     }
 }

@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
 {
     using System.Collections.Generic;
     using System.Security.Cryptography.X509Certificates;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Util;
 

@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
 
     public class NullAuthenticator : IAuthenticator

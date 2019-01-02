@@ -10,9 +10,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
     /// </summary>
     public interface IAmqpConnection
     {
-        T FindExtension<T>();
-
         IPrincipal Principal { get; }
+
+        T FindExtension<T>();
 
         Task Close();
     }

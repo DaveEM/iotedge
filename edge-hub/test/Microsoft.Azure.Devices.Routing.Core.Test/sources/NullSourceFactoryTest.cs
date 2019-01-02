@@ -5,10 +5,12 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.sources
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
+
+    using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Routing.Core.Endpoints;
     using Microsoft.Azure.Devices.Routing.Core.Sources;
     using Microsoft.Azure.Devices.Routing.Core.Util;
-    using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [ExcludeFromCodeCoverage]
@@ -16,7 +18,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.sources
     {
         static readonly IEndpointExecutorFactory ExecutorFactory = new AsyncEndpointExecutorFactory(TestConstants.DefaultConfig, TestConstants.DefaultOptions);
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task SmokeTest()
         {
             Router router = await Router.CreateAsync("router1", "hub", new RouterConfig(new HashSet<Endpoint>(), new HashSet<Route>(), Option.None<Route>()), ExecutorFactory);

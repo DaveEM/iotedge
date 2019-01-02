@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Authenticators
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Common.Security;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
@@ -37,7 +38,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Authenticators
 
             Option<IClientCredentials> validatedCredentials = await this.credentialsCache.Get(tokenCredentials.Identity);
             bool isAuthenticated = await validatedCredentials.Map(
-                    v => Task.FromResult(v is ITokenCredentials validatedTokenCredentials &&
+                    v => Task.FromResult(
+                        v is ITokenCredentials validatedTokenCredentials &&
                         this.IsValid(clientCredentials, validatedTokenCredentials.Token) &&
                         validatedTokenCredentials.Token.Equals(tokenCredentials.Token)))
                 .GetOrElse(Task.FromResult(false));

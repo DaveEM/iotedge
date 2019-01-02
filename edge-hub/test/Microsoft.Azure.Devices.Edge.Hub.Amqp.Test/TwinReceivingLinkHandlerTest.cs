@@ -4,13 +4,16 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]

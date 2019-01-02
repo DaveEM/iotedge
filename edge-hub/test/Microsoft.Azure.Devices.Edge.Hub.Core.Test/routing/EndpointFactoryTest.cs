@@ -2,11 +2,15 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Routing;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Routing.Core;
+
     using Moq;
+
     using Xunit;
+
     using IRoutingMessage = Microsoft.Azure.Devices.Routing.Core.IMessage;
 
     [Unit]
@@ -94,7 +98,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
         [InlineData(null)]
         public void TestCreateSystemEndpointInvalidCases(string systemEndpoint)
         {
-            Assert.Throws<InvalidOperationException>(() =>this.endpointFactory.CreateSystemEndpoint(systemEndpoint));
+            Assert.Throws<InvalidOperationException>(() => this.endpointFactory.CreateSystemEndpoint(systemEndpoint));
         }
 
         [Theory]

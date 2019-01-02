@@ -5,15 +5,20 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test.Commands
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::Docker.DotNet;
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Docker.Commands;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [ExcludeFromCodeCoverage]
@@ -22,17 +27,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test.Commands
     {
         static readonly Option<AuthConfig> NoAuth = Option.None<AuthConfig>();
 
-        static IEnumerable<object[]> CreateTestData()
-        {
-            (string testFullImage, string image, string tag)[] testInputRecords = {
-                ("localhost:5000/edge-hub:latest", "localhost:5000/edge-hub", "latest"),
-                ("edgebuilds.azurecr.io/azedge-edge-agent-x64:latest","edgebuilds.azurecr.io/azedge-edge-agent-x64","latest"),
-                ("mongo:3.4.4", "mongo", "3.4.4"),
-                ("edgebuilds.azurecr.io/azedge-simulated-temperature-sensor-x64", "edgebuilds.azurecr.io/azedge-simulated-temperature-sensor-x64", string.Empty)
-            };
-            return testInputRecords.Select(r => new object[] { r.testFullImage, r.image, r.tag }).AsEnumerable();
-        }
-
         [Theory]
         [Unit]
         [MemberData(nameof(CreateTestData))]
@@ -40,21 +34,23 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test.Commands
         {
             // Arrange
 
-
             string testImage = string.Empty;
             string testTag = string.Empty;
             var auth = new AuthConfig();
             var client = new Mock<IDockerClient>();
             var images = new Mock<IImageOperations>();
-            images.Setup(i => i.CreateImageAsync(It.IsAny<ImagesCreateParameters>(),
-                                                 It.IsAny<AuthConfig>(),
-                                                 It.IsAny<IProgress<JSONMessage>>(),
-                                                 It.IsAny<CancellationToken>()))
-                .Callback<ImagesCreateParameters, AuthConfig, IProgress<JSONMessage>, CancellationToken>((icp, a, p, t) =>
-                {
-                    testImage = icp.FromImage;
-                    testTag = icp.Tag;
-                })
+            images.Setup(
+                    i => i.CreateImageAsync(
+                        It.IsAny<ImagesCreateParameters>(),
+                        It.IsAny<AuthConfig>(),
+                        It.IsAny<IProgress<JSONMessage>>(),
+                        It.IsAny<CancellationToken>()))
+                .Callback<ImagesCreateParameters, AuthConfig, IProgress<JSONMessage>, CancellationToken>(
+                    (icp, a, p, t) =>
+                    {
+                        testImage = icp.FromImage;
+                        testTag = icp.Tag;
+                    })
                 .Returns(TaskEx.Done);
             client.SetupGet(c => c.Images).Returns(images.Object);
 
@@ -106,11 +102,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test.Commands
             {
                 var images = new Mock<IImageOperations>();
                 //ImagesCreateParameters parameters, AuthConfig authConfig, IProgress<JSONMessage> progress, CancellationToken cancellationToken = default(CancellationToken)
-                images.Setup(m => m.CreateImageAsync(It.IsAny<ImagesCreateParameters>(),
-                                                     It.IsAny<AuthConfig>(),
-                                                     It.IsAny<IProgress<JSONMessage>>(),
-                                                     It.IsAny<CancellationToken>()))
-                                                  .Throws(new DockerApiException(System.Net.HttpStatusCode.NotFound, "FakeResponseBody"));
+                images.Setup(
+                        m => m.CreateImageAsync(
+                            It.IsAny<ImagesCreateParameters>(),
+                            It.IsAny<AuthConfig>(),
+                            It.IsAny<IProgress<JSONMessage>>(),
+                            It.IsAny<CancellationToken>()))
+                    .Throws(new DockerApiException(HttpStatusCode.NotFound, "FakeResponseBody"));
 
                 var dockerClient = new Mock<IDockerClient>();
                 dockerClient.SetupGet(c => c.Images).Returns(images.Object);
@@ -131,11 +129,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test.Commands
             {
                 var images = new Mock<IImageOperations>();
                 //ImagesCreateParameters parameters, AuthConfig authConfig, IProgress<JSONMessage> progress, CancellationToken cancellationToken = default(CancellationToken)
-                images.Setup(m => m.CreateImageAsync(It.IsAny<ImagesCreateParameters>(),
-                                                     It.IsAny<AuthConfig>(),
-                                                     It.IsAny<IProgress<JSONMessage>>(),
-                                                     It.IsAny<CancellationToken>()))
-                                                  .Throws(new DockerApiException(System.Net.HttpStatusCode.InternalServerError, "FakeResponseBody"));
+                images.Setup(
+                        m => m.CreateImageAsync(
+                            It.IsAny<ImagesCreateParameters>(),
+                            It.IsAny<AuthConfig>(),
+                            It.IsAny<IProgress<JSONMessage>>(),
+                            It.IsAny<CancellationToken>()))
+                    .Throws(new DockerApiException(HttpStatusCode.InternalServerError, "FakeResponseBody"));
 
                 var dockerClient = new Mock<IDockerClient>();
                 dockerClient.SetupGet(c => c.Images).Returns(images.Object);
@@ -156,11 +156,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test.Commands
             {
                 var images = new Mock<IImageOperations>();
                 //ImagesCreateParameters parameters, AuthConfig authConfig, IProgress<JSONMessage> progress, CancellationToken cancellationToken = default(CancellationToken)
-                images.Setup(m => m.CreateImageAsync(It.IsAny<ImagesCreateParameters>(),
-                                                     It.IsAny<AuthConfig>(),
-                                                     It.IsAny<IProgress<JSONMessage>>(),
-                                                     It.IsAny<CancellationToken>()))
-                                                  .Throws(new DockerApiException(System.Net.HttpStatusCode.Unauthorized, "FakeResponseBody"));
+                images.Setup(
+                        m => m.CreateImageAsync(
+                            It.IsAny<ImagesCreateParameters>(),
+                            It.IsAny<AuthConfig>(),
+                            It.IsAny<IProgress<JSONMessage>>(),
+                            It.IsAny<CancellationToken>()))
+                    .Throws(new DockerApiException(HttpStatusCode.Unauthorized, "FakeResponseBody"));
 
                 var dockerClient = new Mock<IDockerClient>();
                 dockerClient.SetupGet(c => c.Images).Returns(images.Object);
@@ -170,6 +172,18 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test.Commands
 
                 await Assert.ThrowsAsync<DockerApiException>(() => pullCommand.ExecuteAsync(cts.Token));
             }
+        }
+
+        static IEnumerable<object[]> CreateTestData()
+        {
+            (string testFullImage, string image, string tag)[] testInputRecords =
+            {
+                ("localhost:5000/edge-hub:latest", "localhost:5000/edge-hub", "latest"),
+                ("edgebuilds.azurecr.io/azedge-edge-agent-x64:latest", "edgebuilds.azurecr.io/azedge-edge-agent-x64", "latest"),
+                ("mongo:3.4.4", "mongo", "3.4.4"),
+                ("edgebuilds.azurecr.io/azedge-simulated-temperature-sensor-x64", "edgebuilds.azurecr.io/azedge-simulated-temperature-sensor-x64", string.Empty)
+            };
+            return testInputRecords.Select(r => new object[] { r.testFullImage, r.image, r.tag }).AsEnumerable();
         }
     }
 }

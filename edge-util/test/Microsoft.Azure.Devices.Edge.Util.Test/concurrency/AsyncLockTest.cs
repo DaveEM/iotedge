@@ -3,8 +3,10 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Concurrency
 {
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class AsyncLockTest
@@ -29,14 +31,15 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Concurrency
             var locked = new TaskCompletionSource<bool>();
             var cont = new TaskCompletionSource<bool>();
 
-            Task t1 = Task.Run(async () =>
-            {
-                using (await mutex.LockAsync())
+            Task t1 = Task.Run(
+                async () =>
                 {
-                    locked.SetResult(true);
-                    await cont.Task;
-                }
-            });
+                    using (await mutex.LockAsync())
+                    {
+                        locked.SetResult(true);
+                        await cont.Task;
+                    }
+                });
             await locked.Task;
 
             Task<Task<AsyncLock.Releaser>> t2Start = Task.Factory.StartNew(async () => await mutex.LockAsync());
@@ -56,21 +59,23 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Concurrency
             var t1HasLock = new TaskCompletionSource<bool>();
             var t1Continue = new TaskCompletionSource<bool>();
 
-            await Task.Run(async () =>
-            {
-                AsyncLock.Releaser key = await mutex.LockAsync();
-                key.Dispose();
-                key.Dispose();
-            });
-
-            Task t1 = Task.Run(async () =>
-            {
-                using (await mutex.LockAsync())
+            await Task.Run(
+                async () =>
                 {
-                    t1HasLock.SetResult(true);
-                    await t1Continue.Task;
-                }
-            });
+                    AsyncLock.Releaser key = await mutex.LockAsync();
+                    key.Dispose();
+                    key.Dispose();
+                });
+
+            Task t1 = Task.Run(
+                async () =>
+                {
+                    using (await mutex.LockAsync())
+                    {
+                        t1HasLock.SetResult(true);
+                        await t1Continue.Task;
+                    }
+                });
             await t1HasLock.Task;
 
             Task<Task<AsyncLock.Releaser>> task2Start = Task.Factory.StartNew(async () => await mutex.LockAsync());

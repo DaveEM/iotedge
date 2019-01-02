@@ -1,29 +1,34 @@
 // Copyright (c) Microsoft. All rights reserved.
 namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt.Test
 {
+    using System;
+    using System.Linq;
+    using System.Threading.Tasks;
+
     using DotNetty.Codecs.Mqtt.Packets;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt.Persistence;
+
     using Moq;
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
+
     using Xunit;
+
     using IProtocolgatewayDeviceIdentity = Microsoft.Azure.Devices.ProtocolGateway.Identity.IDeviceIdentity;
 
     public class SessionStateStoragePersistenceProviderTest
     {
         const string MethodPostTopicPrefix = "$iothub/methods/POST/";
 
-        readonly IEntityStore<string, SessionState> entityStore = new StoreProvider(new InMemoryDbStoreProvider()).GetEntityStore<string, SessionState>(Core.Constants.SessionStorePartitionKey);
+        readonly IEntityStore<string, SessionState> entityStore = new StoreProvider(new InMemoryDbStoreProvider()).GetEntityStore<string, SessionState>(Constants.SessionStorePartitionKey);
 
         [Fact]
         [Unit]
         public void TestCreate_ShouldReturn_Session()
-        {            
+        {
             var sessionProvider = new SessionStateStoragePersistenceProvider(Mock.Of<IEdgeHub>(), this.entityStore);
             ISessionState session = sessionProvider.Create(true);
 
@@ -178,7 +183,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt.Test
             edgeHub.Verify(x => x.AddSubscription("d1", DeviceSubscription.Methods), Times.Once);
             edgeHub.Verify(x => x.AddSubscription("d1", DeviceSubscription.C2D), Times.Once);
             edgeHub.Verify(x => x.RemoveSubscription("d1", DeviceSubscription.DesiredPropertyUpdates), Times.Once);
-            
+
             ISessionState storedSession = await sessionProvider.GetAsync(identity);
             Assert.NotNull(storedSession);
 

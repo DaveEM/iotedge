@@ -6,6 +6,7 @@ namespace MessagesAnalyzer
     using System.Runtime.Loader;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.AspNetCore;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.Azure.Devices.Common;

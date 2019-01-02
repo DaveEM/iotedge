@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Sinks
                     this.sinks = this.sinks.Add(hubName, sink);
                 }
             }
+
             return Task.FromResult<ISink<T>>(sink);
         }
     }

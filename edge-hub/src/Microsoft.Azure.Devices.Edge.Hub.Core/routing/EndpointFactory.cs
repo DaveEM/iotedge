@@ -3,8 +3,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Routing
 {
     using System;
     using System.Collections.Concurrent;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Routing.Core;
+
     using IRoutingMessage = Microsoft.Azure.Devices.Routing.Core.IMessage;
 
     public class EndpointFactory : IEndpointFactory
@@ -17,8 +19,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Routing
         readonly string edgeDeviceId;
         readonly ConcurrentDictionary<string, Endpoint> cache;
 
-        public EndpointFactory(IConnectionManager connectionManager,
-            Core.IMessageConverter<IRoutingMessage> messageConverter, string edgeDeviceId)
+        public EndpointFactory(
+            IConnectionManager connectionManager,
+            Core.IMessageConverter<IRoutingMessage> messageConverter,
+            string edgeDeviceId)
         {
             this.connectionManager = Preconditions.CheckNotNull(connectionManager, nameof(connectionManager));
             this.messageConverter = Preconditions.CheckNotNull(messageConverter, nameof(messageConverter));

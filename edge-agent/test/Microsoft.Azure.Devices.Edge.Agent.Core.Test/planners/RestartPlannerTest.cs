@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.Planners
     using System.Collections.Immutable;
     using System.Globalization;
     using System.Threading;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Planners;
     using Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class RestartPlannerTest

@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Util.Test.Common
 {
     using System.Collections.Generic;
+
     using Xunit.Abstractions;
     using Xunit.Sdk;
 

@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core
 {
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public interface IWebSocketListenerRegistry

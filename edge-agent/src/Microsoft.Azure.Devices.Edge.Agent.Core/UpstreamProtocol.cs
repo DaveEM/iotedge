@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public enum UpstreamProtocol

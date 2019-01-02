@@ -3,7 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
 {
     using System;
     using System.Collections.Generic;
+
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public static class DockerUtil

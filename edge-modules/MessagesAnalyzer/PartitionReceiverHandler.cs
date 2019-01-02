@@ -4,6 +4,7 @@ namespace MessagesAnalyzer
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.EventHubs;
     using Microsoft.Extensions.Logging;
@@ -25,6 +26,8 @@ namespace MessagesAnalyzer
             this.excludedModulesIds = excludedModulesIds;
         }
 
+        public int MaxBatchSize { get; set; }
+
         public Task ProcessEventsAsync(IEnumerable<EventData> events)
         {
             if (events != null)
@@ -41,7 +44,7 @@ namespace MessagesAnalyzer
                         eventData.Properties.TryGetValue(BatchIdPropertyName, out object batchId);
 
                         if (sequence != null && batchId != null)
-                        { 
+                        {
                             DateTime enqueuedtime = DateTime.MinValue.ToUniversalTime();
                             if (eventData.SystemProperties.TryGetValue(EnqueuedTimePropertyName, out object enqueued))
                             {
@@ -72,7 +75,5 @@ namespace MessagesAnalyzer
             Log.LogError(error.StackTrace);
             return Task.CompletedTask;
         }
-
-        public int MaxBatchSize { get; set; }
     }
 }

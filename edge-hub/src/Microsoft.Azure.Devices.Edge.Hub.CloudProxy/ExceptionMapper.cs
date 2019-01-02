@@ -2,7 +2,9 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
 {
     using System;
+
     using DotNetty.Transport.Channels;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public static class ExceptionMapper

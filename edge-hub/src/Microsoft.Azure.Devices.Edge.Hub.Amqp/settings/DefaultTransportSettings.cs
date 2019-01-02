@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Settings
 {
     using System;
     using System.Security.Cryptography.X509Certificates;
+
     using Microsoft.Azure.Amqp.Transport;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
@@ -49,6 +50,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Settings
             {
                 tlsSettings.CertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
             }
+
             this.Settings = tlsSettings;
         }
 

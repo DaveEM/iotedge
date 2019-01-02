@@ -3,12 +3,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Transport.Mqtt;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common.WorkloadTestServer;
+
     using Xunit;
 
     [Unit]

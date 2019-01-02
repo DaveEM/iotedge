@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Authenticators
     using System;
     using System.Collections.Generic;
     using System.Security.Cryptography.X509Certificates;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;

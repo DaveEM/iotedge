@@ -29,10 +29,14 @@ namespace Microsoft.Azure.Devices.Edge.Util.Concurrency
         public Task<Releaser> LockAsync(CancellationToken token)
         {
             Task wait = this.semaphore.WaitAsync(token);
-            return wait.Status == TaskStatus.RanToCompletion ? this.releaser :
-                wait.ContinueWith((_, state) => new Releaser((AsyncLock)state),
-                    this, CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+            return wait.Status == TaskStatus.RanToCompletion
+                ? this.releaser
+                : wait.ContinueWith(
+                    (_, state) => new Releaser((AsyncLock)state),
+                    this,
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.OnlyOnRanToCompletion,
+                    TaskScheduler.Default);
         }
 
         /// <inheritdoc />

@@ -2,8 +2,10 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.commands
 {
     using System.Threading;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Commands;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class NullCommandTest

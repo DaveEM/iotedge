@@ -7,14 +7,18 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Routing;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Routing.Core;
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
+
     using Moq;
+
     using Xunit;
+
     using IMessage = Microsoft.Azure.Devices.Edge.Hub.Core.IMessage;
     using IRoutingMessage = Microsoft.Azure.Devices.Routing.Core.IMessage;
     using RoutingMessage = Microsoft.Azure.Devices.Routing.Core.Message;

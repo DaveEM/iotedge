@@ -2,11 +2,13 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Devices.Common.Exceptions;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class AmqpExceptionsHelper
@@ -47,6 +49,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
             {
                 return new EdgeAmqpException("Invalid action performed", ErrorCode.InvalidOperation);
             }
+
             return new EdgeAmqpException("Encountered server error", ErrorCode.ServerError, exception);
         }
 

@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Util;
 

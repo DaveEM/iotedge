@@ -2,8 +2,9 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test
 {
     using System;
-    using Microsoft.Azure.Devices.Edge.Hub.Core;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class IotHubConnectionExceptionTest

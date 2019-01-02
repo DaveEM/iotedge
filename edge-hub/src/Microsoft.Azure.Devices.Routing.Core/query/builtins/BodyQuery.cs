@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+
     using Microsoft.Azure.Devices.Routing.Core.Query.JsonPath;
     using Microsoft.Azure.Devices.Routing.Core.Query.Types;
     using Microsoft.Azure.Devices.Routing.Core.Util;
@@ -13,6 +14,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
 
     public class BodyQuery : Builtin
     {
+        public override bool IsBodyQuery => true;
+
         protected override BuiltinExecutor[] Executors => new[]
         {
             new BuiltinExecutor
@@ -22,8 +25,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
                 ExecutorFunc = Create
             },
         };
-
-        public override bool IsBodyQuery => true;
 
         public override bool IsEnabled(RouteCompilerFlags routeCompilerFlags)
         {
@@ -44,7 +45,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
             if (!JsonPathValidator.IsSupportedJsonPath(queryString, out string errorDetails))
             {
                 throw new ArgumentException(
-                    string.Format(CultureInfo.InvariantCulture,
+                    string.Format(
+                        CultureInfo.InvariantCulture,
                         "Error in $body query. {0}",
                         errorDetails));
             }
@@ -62,8 +64,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
 
                 QueryValue queryValue = message.GetQueryValue(queryString);
 
-                return queryValue.ValueType == QueryValueType.Object ?
-                    QueryValue.Undefined : queryValue;
+                return queryValue.ValueType == QueryValueType.Object ? QueryValue.Undefined : queryValue;
             }
             catch (Exception ex) when (!ex.IsFatal())
             {

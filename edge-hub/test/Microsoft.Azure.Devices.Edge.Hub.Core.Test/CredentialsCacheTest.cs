@@ -2,10 +2,13 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]

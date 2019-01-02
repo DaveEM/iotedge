@@ -4,20 +4,22 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
     using System;
     using System.Linq;
     using System.Linq.Expressions;
+
     using Antlr4.Runtime;
+
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
     using Microsoft.Azure.Devices.Routing.Core.Query.Types;
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public abstract class Builtin : IBuiltin
     {
-        protected static Expression True { get; } = Expression.Constant(Bool.True);
+        public virtual bool IsBodyQuery => false;
 
         protected static Expression False { get; } = Expression.Constant(Bool.False);
 
-        protected abstract BuiltinExecutor[] Executors { get; }
+        protected static Expression True { get; } = Expression.Constant(Bool.True);
 
-        public virtual bool IsBodyQuery => false;
+        protected abstract BuiltinExecutor[] Executors { get; }
 
         public virtual bool IsValidMessageSource(IMessageSource source)
         {
@@ -62,17 +64,18 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
 
         static Expression[] WrapArgsAsQueryValue(Expression[] expressions)
         {
-            return expressions.Select(exp =>
-            {
-                if (exp.Type == typeof(QueryValue))
+            return expressions.Select(
+                exp =>
                 {
-                    return exp;
-                }
-                else
-                {
-                    return Expression.Convert(exp, typeof(QueryValue));
-                }
-            }).ToArray();
+                    if (exp.Type == typeof(QueryValue))
+                    {
+                        return exp;
+                    }
+                    else
+                    {
+                        return Expression.Convert(exp, typeof(QueryValue));
+                    }
+                }).ToArray();
         }
     }
 }

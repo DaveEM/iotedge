@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Common
 {
     using System;
     using System.IO;
+
     using Microsoft.Extensions.Configuration;
 
     public static class ConfigHelper
@@ -13,11 +14,11 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Common
         static readonly Lazy<IConfigurationRoot> TestEnvironmentConfigLazy = new Lazy<IConfigurationRoot>(() => GetTestEnvironmentConfiguration(), true);
         static readonly Lazy<TestEnvironment> LazyEnvironment = new Lazy<TestEnvironment>(() => GetEnvironment(), true);
 
-        public static IConfigurationRoot TestConfig => TestConfigLazy.Value;
+        public static TestEnvironment Environment => LazyEnvironment.Value;
 
         public static IConfiguration KeyVaultConfig => TestConfig.GetSection("keyVault");
 
-        public static TestEnvironment Environment => LazyEnvironment.Value;
+        public static IConfigurationRoot TestConfig => TestConfigLazy.Value;
 
         static IConfigurationRoot GetTestConfiguration()
         {
@@ -46,6 +47,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Common
             {
                 throw new InvalidOperationException($"Invalid test environment specified: {environmentName}");
             }
+
             return environment;
         }
     }

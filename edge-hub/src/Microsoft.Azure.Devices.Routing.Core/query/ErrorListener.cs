@@ -5,7 +5,9 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+
     using Antlr4.Runtime;
+
     using Microsoft.Azure.Devices.Routing.Core.Query.Errors;
 
     public class ErrorListener : BaseErrorListener
@@ -116,6 +118,16 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
             this.Error(token, string.Format(CultureInfo.InvariantCulture, "Invalid built-in function '{0}'", token.Text));
         }
 
+        static string TypeName(Type type)
+        {
+            return type == typeof(string) ? "string" :
+                type == typeof(double) ? "number" :
+                type == typeof(Bool) ? "bool" :
+                type == typeof(Undefined) ? "undefined" :
+                type == typeof(Null) ? "null" :
+                "unknown";
+        }
+
         void Error(IToken offendingSymbol, string message)
         {
             // A couple things to note about the start and end column range:
@@ -136,16 +148,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
             var end = new ErrorPosition(line, endColumn);
             var error = new CompilationError(ErrorSeverity.Error, message, new ErrorRange(start, end));
             this.errors.Add(error);
-        }
-
-        static string TypeName(Type type)
-        {
-            return type == typeof(string) ? "string" :
-                   type == typeof(double) ? "number" :
-                   type == typeof(Bool) ? "bool" :
-                   type == typeof(Undefined) ? "undefined" :
-                   type == typeof(Null) ? "null" :
-                   "unknown";
         }
     }
 }

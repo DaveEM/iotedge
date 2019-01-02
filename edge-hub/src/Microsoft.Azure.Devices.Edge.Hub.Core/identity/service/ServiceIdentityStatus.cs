@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
 {
     using System.Runtime.Serialization;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
 
@@ -10,6 +11,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
     {
         [EnumMember(Value = "enabled")]
         Enabled,
+
         [EnumMember(Value = "disabled")]
         Disabled
     }

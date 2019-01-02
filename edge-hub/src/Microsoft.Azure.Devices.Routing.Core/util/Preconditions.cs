@@ -43,6 +43,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
                     throw string.IsNullOrEmpty(message) ? new ArgumentNullException(paramName) : new ArgumentNullException(paramName, message);
                 }
             }
+
             return reference;
         }
 
@@ -78,7 +79,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
         /// <param name="item">Item to check.</param>
         /// <param name="low">Inclusive low value.</param>
         /// <returns></returns>
-        public static T CheckRange<T>(T item, T low) where T : IComparable<T> =>
+        public static T CheckRange<T>(T item, T low)
+            where T : IComparable<T> =>
             CheckRange(item, low, nameof(item));
 
         /// <summary>
@@ -89,7 +91,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
         /// <param name="low">Inclusive low value.</param>
         /// <param name="paramName"></param>
         /// <returns></returns>
-        public static T CheckRange<T>(T item, T low, string paramName) where T : IComparable<T> =>
+        public static T CheckRange<T>(T item, T low, string paramName)
+            where T : IComparable<T> =>
             CheckRange(item, low, paramName, "");
 
         /// <summary>
@@ -101,12 +104,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
         /// <param name="paramName"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public static T CheckRange<T>(T item, T low, string paramName, string message) where T : IComparable<T>
+        public static T CheckRange<T>(T item, T low, string paramName, string message)
+            where T : IComparable<T>
         {
             if (item.CompareTo(low) < 0)
             {
                 throw new ArgumentOutOfRangeException(paramName, item, message);
             }
+
             return item;
         }
 
@@ -119,7 +124,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
         /// <param name="low">Inclusive low value.</param>
         /// <param name="high">Exclusive high value</param>
         /// <returns></returns>
-        public static T CheckRange<T>(T item, T low, T high) where T : IComparable<T> =>
+        public static T CheckRange<T>(T item, T low, T high)
+            where T : IComparable<T> =>
             CheckRange(item, low, high, nameof(item));
 
         /// <summary>
@@ -132,7 +138,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
         /// <param name="high">Exclusive high value</param>
         /// <param name="paramName"></param>
         /// <returns></returns>
-        public static T CheckRange<T>(T item, T low, T high, string paramName) where T : IComparable<T> =>
+        public static T CheckRange<T>(T item, T low, T high, string paramName)
+            where T : IComparable<T> =>
             CheckRange(item, low, high, paramName, "");
 
         /// <summary>
@@ -146,12 +153,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
         /// <param name="paramName"></param>
         /// <param name="message"></param>
         /// <returns></returns>
-        public static T CheckRange<T>(T item, T low, T high, string paramName, string message) where T : IComparable<T>
+        public static T CheckRange<T>(T item, T low, T high, string paramName, string message)
+            where T : IComparable<T>
         {
             if (item.CompareTo(low) < 0 || item.CompareTo(high) >= 0)
             {
                 throw new ArgumentOutOfRangeException(paramName, item, message);
             }
+
             return item;
         }
     }

@@ -3,8 +3,10 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
 {
     using System.Linq;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Unit]
@@ -49,7 +51,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
             string firstValue = "firstValue";
             await columnFamilyDbStore.Put(firstKey.ToBytes(), firstValue.ToBytes());
 
-            for(int i = 0; i < 10; i++)
+            for (int i = 0; i < 10; i++)
             {
                 string key = $"key{i}";
                 string value = "$value{i}";

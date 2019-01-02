@@ -7,11 +7,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Test;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Newtonsoft.Json;
+
     using Xunit;
 
     public class ModuleIdentityLifecycleManagerTest
@@ -27,7 +31,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             string hostname = "hostname";
             string deviceId = "deviceId";
             string gatewayHostName = "localhost";
-            
+
             IImmutableDictionary<string, IModuleIdentity> modulesIdentities = await new ModuleIdentityLifecycleManager(serviceClient.Object, hostname, deviceId, gatewayHostName)
                 .GetModuleIdentitiesAsync(ModuleSet.Empty, ModuleSet.Empty);
 
@@ -52,7 +56,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             createdModuleIdentity.Authentication = new AuthenticationMechanism();
             createdModuleIdentity.Authentication.Type = AuthenticationType.Sas;
             createdModuleIdentity.Authentication.SymmetricKey.PrimaryKey = moduleSharedAccessKey;
-            Module[] updatedServiceIdentities = { createdModuleIdentity};
+            Module[] updatedServiceIdentities = { createdModuleIdentity };
 
             // If we change to IList Mock doesn't recognize and making it a non Lambda would add a lot of complexity on this code.
             // ReSharper disable PossibleMultipleEnumeration
@@ -211,7 +215,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             string deviceId = "deviceId";
             string sharedAccessKey = Convert.ToBase64String(Encoding.UTF8.GetBytes("primaryAccessKey"));
             string gatewayHostName = "localhost";
-            
+
             Module[] serviceIdentities = { serviceModuleIdentity };
             serviceClient.Setup(sc => sc.GetModules()).Returns(Task.FromResult(serviceIdentities.AsEnumerable()));
             serviceClient.Setup(sc => sc.UpdateModules(It.IsAny<IEnumerable<Module>>())).Callback(
@@ -286,7 +290,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             string deviceId = "deviceId";
             string gatewayHostName = "localhost";
 
-            var serviceIdentities = new List<Microsoft.Azure.Devices.Module>();
+            var serviceIdentities = new List<Module>();
             serviceIdentities.Add(serviceModuleIdentity);
             serviceClient.Setup(sc => sc.GetModules()).Returns(Task.FromResult(serviceIdentities.AsEnumerable()));
             // If we change to IList Mock doesn't recognize and making it a non Lambda would add a lot of complexity on this code.
@@ -318,7 +322,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             string deviceId = "deviceId";
             string gatewayHostName = "localhost";
 
-            var serviceIdentities = new List<Microsoft.Azure.Devices.Module>();
+            var serviceIdentities = new List<Module>();
             serviceIdentities.Add(serviceModuleIdentity);
             serviceClient.Setup(sc => sc.GetModules()).Returns(Task.FromResult(serviceIdentities.AsEnumerable()));
             serviceClient.Setup(sc => sc.RemoveModules(It.IsAny<IEnumerable<string>>())).Returns(Task.FromResult(ImmutableList<Module>.Empty.AsEnumerable()));
@@ -410,7 +414,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
 
             IImmutableDictionary<string, IModuleIdentity> modulesIdentities = await new ModuleIdentityLifecycleManager(serviceClient.Object, hostname, deviceId, gatewayHostName)
                 .GetModuleIdentitiesAsync(ModuleSet.Create(module), ModuleSet.Empty);
-      
+
             serviceClient.VerifyAll();
             Assert.False(modulesIdentities.Any());
         }

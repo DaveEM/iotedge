@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Service.Modules
 {
     using Autofac;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Http;
 

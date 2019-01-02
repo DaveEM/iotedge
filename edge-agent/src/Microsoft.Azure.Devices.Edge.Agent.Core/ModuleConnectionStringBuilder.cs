@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
 {
     using System;
     using System.Text;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class ModuleConnectionStringBuilder
@@ -33,6 +34,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
                 {
                     stringBuilder.Append(ValuePairDelimiter);
                 }
+
                 stringBuilder.Append($"{propertyName}={propertyValue}");
             }
         }
@@ -51,6 +53,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
                 this.deviceId = deviceId;
                 this.moduleId = moduleId;
             }
+
+            public static implicit operator string(ModuleConnectionString moduleConnectionStringBuilder) => moduleConnectionStringBuilder.Build();
 
             public ModuleConnectionString WithGatewayHostName(string gatewayHostName)
             {
@@ -79,8 +83,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
                 AppendIfNotEmpty(connectionString, GatewayHostNamePropertyName, this.gatewayHostName);
                 return connectionString.ToString();
             }
-
-            public static implicit operator string(ModuleConnectionString moduleConnectionStringBuilder) => moduleConnectionStringBuilder.Build();
         }
     }
 }

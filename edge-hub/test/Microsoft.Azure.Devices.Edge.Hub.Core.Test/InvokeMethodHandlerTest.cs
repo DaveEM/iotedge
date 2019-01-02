@@ -6,16 +6,19 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test
     using System.Collections.ObjectModel;
     using System.Net;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]
     public class InvokeMethodHandlerTest
     {
-        [Fact]        
+        [Fact]
         public async Task InvokeMethodTest()
         {
             // Arrange
@@ -43,7 +46,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test
             // Assert
             Assert.NotNull(response);
             Assert.Equal(response.CorrelationId, request.CorrelationId);
-            Assert.Equal(response.HttpStatusCode, HttpStatusCode.OK);            
+            Assert.Equal(response.HttpStatusCode, HttpStatusCode.OK);
             Assert.Null(response.Data);
             Assert.Equal(response.Status, 200);
             Assert.False(response.Exception.HasValue);

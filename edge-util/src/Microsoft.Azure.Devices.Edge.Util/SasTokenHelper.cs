@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Util
     using System.Globalization;
     using System.Net;
     using System.Text;
+
     using static System.FormattableString;
 
     public static class SasTokenHelper
@@ -21,11 +22,16 @@ namespace Microsoft.Azure.Devices.Edge.Util
             // SharedAccessSignature sr=ENCODED(dh://myiothub.azure-devices.net/a/b/c?myvalue1=a)&sig=<Signature>&se=<ExpiresOnValue>[&skn=<KeyName>]
 
             var buffer = new StringBuilder();
-            buffer.AppendFormat(CultureInfo.InvariantCulture, "{0} {1}={2}&{3}={4}&{5}={6}",
+            buffer.AppendFormat(
+                CultureInfo.InvariantCulture,
+                "{0} {1}={2}&{3}={4}&{5}={6}",
                 SharedAccessSignature,
-                AudienceFieldName, audience,
-                SignatureFieldName, WebUtility.UrlEncode(signature),
-                ExpiryFieldName, WebUtility.UrlEncode(expiry));
+                AudienceFieldName,
+                audience,
+                SignatureFieldName,
+                WebUtility.UrlEncode(signature),
+                ExpiryFieldName,
+                WebUtility.UrlEncode(expiry));
 
             return buffer.ToString();
         }

@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     /// <summary>

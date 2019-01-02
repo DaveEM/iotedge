@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Storage
 {
     using System.Collections.Concurrent;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class InMemoryDbStoreProvider : IDbStoreProvider

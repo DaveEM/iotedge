@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using System.Threading.Tasks.Dataflow;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
@@ -33,9 +34,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             this.sendMessageProcessor = new ActionBlock<AmqpMessage>(s => this.ProcessMessageAsync(s));
         }
 
-        protected IReceivingAmqpLink ReceivingLink { get; }
-
         protected abstract QualityOfService QualityOfService { get; }
+
+        protected IReceivingAmqpLink ReceivingLink { get; }
 
         protected override Task OnOpenAsync(TimeSpan timeout)
         {
@@ -71,12 +72,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             return Task.CompletedTask;
         }
 
-        Task OnReceiveLinkClosed()
-        {
-            this.sendMessageProcessor.Complete();
-            return Task.CompletedTask;
-        }
-
         protected abstract Task OnMessageReceived(AmqpMessage amqpMessage);
 
         internal async Task ProcessMessageAsync(AmqpMessage amqpMessage)
@@ -101,6 +96,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             {
                 amqpMessage.Dispose();
             }
+        }
+
+        Task OnReceiveLinkClosed()
+        {
+            this.sendMessageProcessor.Complete();
+            return Task.CompletedTask;
         }
 
         static class Events

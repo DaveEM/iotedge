@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Encoding;
     using Microsoft.Azure.Amqp.Framing;
@@ -12,7 +13,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]
@@ -95,7 +98,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             var deliveryState = new Mock<DeliveryState>(new AmqpSymbol(""), AmqpConstants.AcceptedOutcome.DescriptorCode);
             var delivery = Mock.Of<Delivery>(
                 d => d.State == deliveryState.Object
-                    && d.DeliveryTag == new ArraySegment<byte>(Guid.NewGuid().ToByteArray()));
+                     && d.DeliveryTag == new ArraySegment<byte>(Guid.NewGuid().ToByteArray()));
 
             // Act
             await sendingLinkHandler.OpenAsync(TimeSpan.FromSeconds(5));

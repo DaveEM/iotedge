@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Hub.CloudProxy;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
@@ -19,9 +20,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
     using Microsoft.Azure.Devices.Routing.Core;
     using Microsoft.Azure.Devices.Routing.Core.Endpoints;
     using Microsoft.Azure.Devices.Shared;
+
     using Moq;
+
     using Newtonsoft.Json;
+
     using Xunit;
+
+    using IotHubConnectionStringBuilder = Microsoft.Azure.Devices.IotHubConnectionStringBuilder;
+    using Message = Microsoft.Azure.Devices.Client.Message;
 
     [Integration]
     [Collection("Microsoft.Azure.Devices.Edge.Hub.E2E.Test")]
@@ -38,13 +45,13 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
             var messageConverterProvider = new MessageConverterProvider(
                 new Dictionary<Type, IMessageConverter>()
                 {
-                    { typeof(Client.Message), new DeviceClientMessageConverter() },
+                    { typeof(Message), new DeviceClientMessageConverter() },
                     { typeof(Twin), twinMessageConverter },
                     { typeof(TwinCollection), twinCollectionMessageConverter }
                 });
 
             string iotHubConnectionString = await SecretsHelper.GetSecretFromConfigKey("iotHubConnStrKey");
-            Devices.IotHubConnectionStringBuilder iotHubConnectionStringBuilder = Devices.IotHubConnectionStringBuilder.Create(iotHubConnectionString);
+            IotHubConnectionStringBuilder iotHubConnectionStringBuilder = IotHubConnectionStringBuilder.Create(iotHubConnectionString);
             RegistryManager registryManager = RegistryManager.CreateFromConnectionString(iotHubConnectionString);
             await registryManager.OpenAsync();
 
@@ -64,7 +71,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
                 1,
                 new ClientProvider(),
                 Option.None<UpstreamProtocol>(),
-                new ClientTokenProvider(signatureProvider, iothubHostName, edgeDeviceId, TimeSpan.FromMinutes(60)), 
+                new ClientTokenProvider(signatureProvider, iothubHostName, edgeDeviceId, TimeSpan.FromMinutes(60)),
                 Mock.Of<IDeviceScopeIdentitiesCache>(),
                 credentialsCache,
                 edgeHubCredentials.Identity,

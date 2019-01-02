@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Device
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
 
@@ -20,6 +21,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Device
     /// </summary>
     public interface IDeviceProxy
     {
+        IIdentity Identity { get; }
+
+        bool IsActive { get; }
+
         Task CloseAsync(Exception ex);
 
         Task SendC2DMessageAsync(IMessage message);
@@ -31,10 +36,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Device
         Task OnDesiredPropertyUpdates(IMessage desiredProperties);
 
         Task SendTwinUpdate(IMessage twin);
-
-        bool IsActive { get; }
-
-        IIdentity Identity { get; }
 
         void SetInactive();
 

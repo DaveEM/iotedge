@@ -2,8 +2,9 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System;
-    using IPrincipal = System.Security.Principal.IPrincipal;
+    using System.Security.Principal;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp.Sasl;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;

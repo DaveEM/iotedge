@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
     using System;
     using System.Collections.Generic;
     using System.Text;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Shared;
@@ -14,11 +15,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
         {
             byte[] body = Encoding.UTF8.GetBytes(sourceMessage.ToJson());
             return new EdgeMessage.Builder(body)
-                .SetSystemProperties(new Dictionary<string, string>
-                {
-                    [SystemProperties.EnqueuedTime] = DateTime.UtcNow.ToString("o"),
-                    [SystemProperties.Version] = sourceMessage.Version.ToString()
-                })
+                .SetSystemProperties(
+                    new Dictionary<string, string>
+                    {
+                        [SystemProperties.EnqueuedTime] = DateTime.UtcNow.ToString("o"),
+                        [SystemProperties.Version] = sourceMessage.Version.ToString()
+                    })
                 .Build();
         }
 

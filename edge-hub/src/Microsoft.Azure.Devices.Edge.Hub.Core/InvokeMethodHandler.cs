@@ -6,9 +6,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
     using System.Collections.Generic;
     using System.Net;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
 
     public class InvokeMethodHandler : IInvokeMethodHandler
@@ -105,6 +107,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             {
                 return deviceProxy;
             }
+
             return Option.None<IDeviceProxy>();
         }
 

@@ -5,12 +5,6 @@ namespace IotEdgeQuickstart.Details
 
     public class RegistryCredentials
     {
-        public string Address { get; }
-
-        public string User { get; }
-
-        public string Password { get; }
-
         public RegistryCredentials(string address, string user, string password)
         {
             if (string.IsNullOrEmpty(address)) throw new ArgumentException("address cannot be null or empty");
@@ -21,5 +15,11 @@ namespace IotEdgeQuickstart.Details
             this.User = user;
             this.Password = password;
         }
+
+        public string Address { get; }
+
+        public string Password { get; }
+
+        public string User { get; }
     }
 }

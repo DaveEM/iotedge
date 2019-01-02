@@ -6,10 +6,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.PlanRunners;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class OrderedRetryPlanRunnerTest
@@ -310,31 +313,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
             badCommand.Verify(c => c.ExecuteAsync(token), Times.Exactly(4));
         }
 
-        Mock<ICommand> MakeMockCommandThatWorks(string id, Action callback = null)
-        {
-            callback = callback ?? (() => { });
-
-            var command = new Mock<ICommand>();
-            command.SetupGet(c => c.Id).Returns(id);
-            command.Setup(c => c.ExecuteAsync(It.IsAny<CancellationToken>()))
-                .Callback(callback)
-                .Returns(Task.CompletedTask);
-            command.Setup(c => c.Show())
-                .Returns(id);
-            return command;
-        }
-
-        Mock<ICommand> MakeMockCommandThatThrows(string id)
-        {
-            var command = new Mock<ICommand>();
-            command.SetupGet(c => c.Id).Returns(id);
-            command.Setup(c => c.ExecuteAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new InvalidOperationException("No donuts for you"));
-            command.Setup(c => c.Show())
-                .Returns(id);
-            return command;
-        }
-
         [Fact]
         [Unit]
         public async void TestOrderedRetryPlanRunnerCancellation()
@@ -360,6 +338,31 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
             commands[0].Verify(m => m.ExecuteAsync(cts.Token), Times.Once());
             commands[1].Verify(m => m.ExecuteAsync(cts.Token), Times.Once());
             commands[2].Verify(m => m.ExecuteAsync(cts.Token), Times.Never());
+        }
+
+        Mock<ICommand> MakeMockCommandThatWorks(string id, Action callback = null)
+        {
+            callback = callback ?? (() => { });
+
+            var command = new Mock<ICommand>();
+            command.SetupGet(c => c.Id).Returns(id);
+            command.Setup(c => c.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .Callback(callback)
+                .Returns(Task.CompletedTask);
+            command.Setup(c => c.Show())
+                .Returns(id);
+            return command;
+        }
+
+        Mock<ICommand> MakeMockCommandThatThrows(string id)
+        {
+            var command = new Mock<ICommand>();
+            command.SetupGet(c => c.Id).Returns(id);
+            command.Setup(c => c.ExecuteAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("No donuts for you"));
+            command.Setup(c => c.Show())
+                .Returns(id);
+            return command;
         }
     }
 }

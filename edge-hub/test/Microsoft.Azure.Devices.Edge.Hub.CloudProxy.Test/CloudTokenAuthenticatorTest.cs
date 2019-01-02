@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Authenticators;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Cloud;
@@ -10,7 +11,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]

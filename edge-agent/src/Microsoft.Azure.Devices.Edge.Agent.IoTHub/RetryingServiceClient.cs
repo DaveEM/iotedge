@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Common.Exceptions;
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
@@ -36,11 +37,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub
             this.ExecuteWithRetry(() => this.underlying.UpdateModules(modules), nameof(this.underlying.UpdateModules));
 
         public Task RemoveModules(IEnumerable<string> identities) =>
-            this.ExecuteWithRetry(async () =>
-            {
-                await this.underlying.RemoveModules(identities);
-                return 0;
-            }, nameof(this.underlying.RemoveModules));
+            this.ExecuteWithRetry(
+                async () =>
+                {
+                    await this.underlying.RemoveModules(identities);
+                    return 0;
+                },
+                nameof(this.underlying.RemoveModules));
 
         Task<T> ExecuteWithRetry<T>(Func<Task<T>> func, string action)
         {

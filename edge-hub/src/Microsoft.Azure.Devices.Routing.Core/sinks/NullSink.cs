@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Sinks
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public class NullSink<T> : ISink<T>

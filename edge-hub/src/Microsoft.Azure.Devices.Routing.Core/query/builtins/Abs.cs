@@ -4,11 +4,11 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
     using System;
     using System.Linq.Expressions;
     using System.Reflection;
+
     using Microsoft.Azure.Devices.Routing.Core.Query.Types;
 
     public class Abs : Builtin
     {
-
         protected override BuiltinExecutor[] Executors => new[]
         {
             new BuiltinExecutor

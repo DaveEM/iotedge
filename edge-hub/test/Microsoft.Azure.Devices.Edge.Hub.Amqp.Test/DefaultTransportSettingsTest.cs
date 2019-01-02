@@ -3,12 +3,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
 {
     using System;
     using System.Security.Cryptography.X509Certificates;
+
     using Microsoft.Azure.Devices.Edge.Hub.Amqp.Settings;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
-    using Xunit;
+
     using Moq;
+
+    using Xunit;
 
     public class DefaultTransportSettingsTest
     {

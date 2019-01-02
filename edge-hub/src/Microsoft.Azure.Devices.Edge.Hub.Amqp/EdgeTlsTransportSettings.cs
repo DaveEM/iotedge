@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System;
+
     using Microsoft.Azure.Amqp.Transport;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;

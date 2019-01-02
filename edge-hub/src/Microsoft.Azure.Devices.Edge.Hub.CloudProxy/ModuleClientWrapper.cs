@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Azure.Devices.Shared;
@@ -47,7 +48,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
             {
                 await this.underlyingModuleClient.OpenAsync();
             }
-            catch(Exception)
+            catch (Exception)
             {
                 this.isActive.Set(false);
                 throw;

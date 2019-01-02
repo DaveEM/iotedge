@@ -4,11 +4,19 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class DeploymentConfig : IEquatable<DeploymentConfig>
     {
+        public static DeploymentConfig Empty = new DeploymentConfig(
+            "1.0",
+            UnknownRuntimeInfo.Instance,
+            new SystemModules(UnknownEdgeAgentModule.Instance, UnknownEdgeHubModule.Instance),
+            ImmutableDictionary<string, IModule>.Empty);
+
         static readonly ReadOnlyDictionaryComparer<string, IModule> ModuleDictionaryComparer = new ReadOnlyDictionaryComparer<string, IModule>();
 
         [JsonConstructor]
@@ -25,31 +33,17 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             this.UpdateModuleNames();
         }
 
-        void UpdateModuleNames()
-        {
-            foreach (KeyValuePair<string, IModule> module in this.Modules)
-            {
-                module.Value.Name = module.Key;
-            }
-        }
-
-        public static DeploymentConfig Empty = new DeploymentConfig(
-            "1.0",
-            UnknownRuntimeInfo.Instance,
-            new SystemModules(UnknownEdgeAgentModule.Instance, UnknownEdgeHubModule.Instance),
-            ImmutableDictionary<string, IModule>.Empty);
-
-        [JsonProperty("schemaVersion")]
-        public string SchemaVersion { get; }
+        [JsonProperty("modules")]
+        public IImmutableDictionary<string, IModule> Modules { get; }
 
         [JsonProperty("runtime")]
         public IRuntimeInfo Runtime { get; }
 
+        [JsonProperty("schemaVersion")]
+        public string SchemaVersion { get; }
+
         [JsonProperty("systemModules")]
         public SystemModules SystemModules { get; }
-
-        [JsonProperty("modules")]
-        public IImmutableDictionary<string, IModule> Modules { get; }
 
         public ModuleSet GetModuleSet()
         {
@@ -73,9 +67,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             if (ReferenceEquals(this, other))
                 return true;
             return string.Equals(this.SchemaVersion, other.SchemaVersion)
-                && Equals(this.Runtime, other.Runtime)
-                && Equals(this.SystemModules, other.SystemModules)
-                && ModuleDictionaryComparer.Equals(this.Modules, other.Modules);
+                   && Equals(this.Runtime, other.Runtime)
+                   && Equals(this.SystemModules, other.SystemModules)
+                   && ModuleDictionaryComparer.Equals(this.Modules, other.Modules);
         }
 
         public override bool Equals(object obj)
@@ -100,5 +94,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
                 return hashCode;
             }
         }
-    }    
+
+        void UpdateModuleNames()
+        {
+            foreach (KeyValuePair<string, IModule> module in this.Modules)
+            {
+                module.Value.Name = module.Key;
+            }
+        }
+    }
 }

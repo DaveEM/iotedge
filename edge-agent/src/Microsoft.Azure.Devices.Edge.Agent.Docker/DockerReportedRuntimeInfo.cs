@@ -3,7 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class DockerReportedRuntimeInfo : DockerRuntimeInfo, IEquatable<DockerReportedRuntimeInfo>
@@ -18,12 +20,18 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
         [JsonProperty("platform")]
         public DockerPlatformInfo Platform { get; }
 
+        public static bool operator ==(DockerReportedRuntimeInfo info1, DockerReportedRuntimeInfo info2) =>
+            EqualityComparer<DockerReportedRuntimeInfo>.Default.Equals(info1, info2);
+
+        public static bool operator !=(DockerReportedRuntimeInfo info1, DockerReportedRuntimeInfo info2) =>
+            !(info1 == info2);
+
         public override bool Equals(object obj) => this.Equals(obj as DockerReportedRuntimeInfo);
 
         public bool Equals(DockerReportedRuntimeInfo other) =>
-                   other != null &&
-                   base.Equals(other) &&
-                   EqualityComparer<DockerPlatformInfo>.Default.Equals(this.Platform, other.Platform);
+            other != null &&
+            base.Equals(other) &&
+            EqualityComparer<DockerPlatformInfo>.Default.Equals(this.Platform, other.Platform);
 
         public override int GetHashCode()
         {
@@ -32,11 +40,5 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
             hashCode = hashCode * -1521134295 + EqualityComparer<DockerPlatformInfo>.Default.GetHashCode(this.Platform);
             return hashCode;
         }
-
-        public static bool operator ==(DockerReportedRuntimeInfo info1, DockerReportedRuntimeInfo info2) =>
-            EqualityComparer<DockerReportedRuntimeInfo>.Default.Equals(info1, info2);
-
-        public static bool operator !=(DockerReportedRuntimeInfo info1, DockerReportedRuntimeInfo info2) =>
-            !(info1 == info2);
     }
 }

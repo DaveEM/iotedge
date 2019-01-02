@@ -6,6 +6,7 @@ namespace IotEdgeQuickstart.Details
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     class Iotedgectl : IBootstrapper

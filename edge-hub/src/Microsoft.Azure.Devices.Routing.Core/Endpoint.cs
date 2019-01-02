@@ -2,21 +2,11 @@
 namespace Microsoft.Azure.Devices.Routing.Core
 {
     using System;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public abstract class Endpoint : IEquatable<Endpoint>
     {
-        /// <summary>
-        /// Endpoint identifier. This must be globally unique
-        /// </summary>
-        public virtual string Id { get; }
-
-        public string Name { get; }
-
-        public string IotHubName { get; }
-
-        public abstract string Type { get; }
-
         protected Endpoint(string id)
             : this(id, id, string.Empty)
         {
@@ -29,6 +19,17 @@ namespace Microsoft.Azure.Devices.Routing.Core
             this.IotHubName = Preconditions.CheckNotNull(iotHubName);
         }
 
+        /// <summary>
+        /// Endpoint identifier. This must be globally unique
+        /// </summary>
+        public virtual string Id { get; }
+
+        public string IotHubName { get; }
+
+        public string Name { get; }
+
+        public abstract string Type { get; }
+
         public abstract IProcessor CreateProcessor();
 
         public abstract void LogUserMetrics(long messageCount, long latencyInMs);
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Devices.Routing.Core
             {
                 return false;
             }
+
             // Name is intentionally left out of equality because it can be updated on the
             // endpoint without changing the endpoint's functionality
             return ReferenceEquals(this, other) || string.Equals(this.Id, other.Id);

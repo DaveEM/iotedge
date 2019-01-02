@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Encoding;
     using Microsoft.Azure.Amqp.Framing;
@@ -12,12 +13,21 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]
     public class SendingLinkHandlerTest
     {
+        public static IEnumerable<object[]> FeedbackStatusTestData()
+        {
+            yield return new object[] { AmqpConstants.AcceptedOutcome.DescriptorCode, FeedbackStatus.Complete };
+            yield return new object[] { AmqpConstants.RejectedOutcome.DescriptorCode, FeedbackStatus.Reject };
+            yield return new object[] { AmqpConstants.ReleasedOutcome.DescriptorCode, FeedbackStatus.Abandon };
+        }
+
         [Fact]
         public async Task SendMessageWithFeedbackTest()
         {
@@ -34,9 +44,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             amqpAuthenticator.Setup(c => c.AuthenticateAsync("d1")).ReturnsAsync(true);
             Mock<ICbsNode> cbsNodeMock = amqpAuthenticator.As<ICbsNode>();
             ICbsNode cbsNode = cbsNodeMock.Object;
-            var amqpConnection = Mock.Of<IAmqpConnection>(c =>
-                c.FindExtension<IConnectionHandler>() == connectionHandler &&
-                c.FindExtension<ICbsNode>() == cbsNode);
+            var amqpConnection = Mock.Of<IAmqpConnection>(
+                c =>
+                    c.FindExtension<IConnectionHandler>() == connectionHandler &&
+                    c.FindExtension<ICbsNode>() == cbsNode);
             var amqpSession = Mock.Of<IAmqpSession>(s => s.Connection == amqpConnection);
             var amqpLinkSettings = new AmqpLinkSettings();
             var sendingLink = Mock.Of<ISendingAmqpLink>(l => l.Session == amqpSession && !l.IsReceiver && l.Settings == amqpLinkSettings && l.State == AmqpObjectState.Opened);
@@ -53,7 +64,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             var deliveryState = new Mock<DeliveryState>(new AmqpSymbol(""), AmqpConstants.AcceptedOutcome.DescriptorCode);
             var delivery = Mock.Of<Delivery>(
                 d => d.State == deliveryState.Object
-                    && d.DeliveryTag == new ArraySegment<byte>(Guid.NewGuid().ToByteArray()));
+                     && d.DeliveryTag == new ArraySegment<byte>(Guid.NewGuid().ToByteArray()));
 
             // Act
             await sendingLinkHandler.OpenAsync(TimeSpan.FromSeconds(5));
@@ -89,9 +100,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             amqpAuthenticator.Setup(c => c.AuthenticateAsync("d1")).ReturnsAsync(true);
             Mock<ICbsNode> cbsNodeMock = amqpAuthenticator.As<ICbsNode>();
             ICbsNode cbsNode = cbsNodeMock.Object;
-            var amqpConnection = Mock.Of<IAmqpConnection>(c =>
-                c.FindExtension<IConnectionHandler>() == connectionHandler &&
-                c.FindExtension<ICbsNode>() == cbsNode);
+            var amqpConnection = Mock.Of<IAmqpConnection>(
+                c =>
+                    c.FindExtension<IConnectionHandler>() == connectionHandler &&
+                    c.FindExtension<ICbsNode>() == cbsNode);
             var amqpSession = Mock.Of<IAmqpSession>(s => s.Connection == amqpConnection);
             var amqpLinkSettings = new AmqpLinkSettings();
             var sendingLink = Mock.Of<ISendingAmqpLink>(l => l.Session == amqpSession && !l.IsReceiver && l.Settings == amqpLinkSettings && l.State == AmqpObjectState.Opened);
@@ -108,7 +120,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             var deliveryState = new Mock<DeliveryState>(new AmqpSymbol(""), AmqpConstants.AcceptedOutcome.DescriptorCode);
             var delivery = Mock.Of<Delivery>(
                 d => d.State == deliveryState.Object
-                    && d.DeliveryTag == new ArraySegment<byte>(Guid.NewGuid().ToByteArray()));
+                     && d.DeliveryTag == new ArraySegment<byte>(Guid.NewGuid().ToByteArray()));
 
             // Act
             await sendingLinkHandler.OpenAsync(TimeSpan.FromSeconds(5));
@@ -142,9 +154,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
             amqpAuthenticator.Setup(c => c.AuthenticateAsync("d1")).ReturnsAsync(true);
             Mock<ICbsNode> cbsNodeMock = amqpAuthenticator.As<ICbsNode>();
             ICbsNode cbsNode = cbsNodeMock.Object;
-            var amqpConnection = Mock.Of<IAmqpConnection>(c =>
-                c.FindExtension<IConnectionHandler>() == connectionHandler &&
-                c.FindExtension<ICbsNode>() == cbsNode);
+            var amqpConnection = Mock.Of<IAmqpConnection>(
+                c =>
+                    c.FindExtension<IConnectionHandler>() == connectionHandler &&
+                    c.FindExtension<ICbsNode>() == cbsNode);
             var amqpSession = Mock.Of<IAmqpSession>(s => s.Connection == amqpConnection);
             var amqpLinkSettings = new AmqpLinkSettings();
             var sendingLink = Mock.Of<ISendingAmqpLink>(l => l.Session == amqpSession && !l.IsReceiver && l.Settings == amqpLinkSettings && l.State == AmqpObjectState.Opened);
@@ -184,13 +197,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
 
             // Assert
             Assert.Equal(feedbackStatus, expectedFeedbackStatus);
-        }
-
-        public static IEnumerable<object[]> FeedbackStatusTestData()
-        {
-            yield return new object[] { AmqpConstants.AcceptedOutcome.DescriptorCode, FeedbackStatus.Complete };
-            yield return new object[] { AmqpConstants.RejectedOutcome.DescriptorCode, FeedbackStatus.Reject };
-            yield return new object[] { AmqpConstants.ReleasedOutcome.DescriptorCode, FeedbackStatus.Abandon };
         }
     }
 

@@ -5,9 +5,11 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Routing.Core.Util;
+
     using Xunit;
 
     class StalledEndpoint : Endpoint
@@ -34,14 +36,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
         {
             readonly StalledEndpoint endpoint;
 
-            public Endpoint Endpoint => this.endpoint;
-
-            public ITransientErrorDetectionStrategy ErrorDetectionStrategy => new ErrorDetectionStrategy(_ => true);
-
             public Processor(StalledEndpoint endpoint)
             {
                 this.endpoint = endpoint;
             }
+
+            public Endpoint Endpoint => this.endpoint;
+
+            public ITransientErrorDetectionStrategy ErrorDetectionStrategy => new ErrorDetectionStrategy(_ => true);
 
             public Task<ISinkResult<IMessage>> ProcessAsync(IMessage message, CancellationToken token) =>
                 this.ProcessAsync(new[] { message }, token);
@@ -59,7 +61,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
 
     public class StalledEndpointTest : RoutingUnitTestBase
     {
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public void SmokeTest()
         {
             var endpoint = new StalledEndpoint("id1");

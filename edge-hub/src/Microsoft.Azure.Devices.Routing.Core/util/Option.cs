@@ -8,15 +8,19 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
 
     public struct Option<T> : IEquatable<Option<T>>
     {
-        public bool HasValue { get; }
-
-        T Value { get; }
-
         internal Option(T value, bool hasValue)
         {
             this.Value = value;
             this.HasValue = hasValue;
         }
+
+        public bool HasValue { get; }
+
+        T Value { get; }
+
+        public static bool operator ==(Option<T> opt1, Option<T> opt2) => opt1.Equals(opt2);
+
+        public static bool operator !=(Option<T> opt1, Option<T> opt2) => !opt1.Equals(opt2);
 
         public bool Equals(Option<T> other)
         {
@@ -28,14 +32,11 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
             {
                 return EqualityComparer<T>.Default.Equals(this.Value, other.Value);
             }
+
             return false;
         }
 
         public override bool Equals(object obj) => obj is Option<T> && this.Equals((Option<T>)obj);
-
-        public static bool operator ==(Option<T> opt1, Option<T> opt2) => opt1.Equals(opt2);
-
-        public static bool operator !=(Option<T> opt1, Option<T> opt2) => !opt1.Equals(opt2);
 
         public override int GetHashCode()
         {
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
             {
                 return this.Value == null ? 1 : this.Value.GetHashCode();
             }
+
             return 0;
         }
 
@@ -71,6 +73,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Util
             {
                 return this.Value == null ? value == null : this.Value.Equals(value);
             }
+
             return false;
         }
 

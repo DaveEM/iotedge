@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
 
     public interface IModuleClientProvider

@@ -7,7 +7,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
     {
         const string DefaultAuthScheme = "sasToken";
 
-        public IdentityProviderServiceCredentials(string providerUri, string moduleGenerationId, string authScheme = DefaultAuthScheme) : this(providerUri, moduleGenerationId, authScheme, Option.None<string>())
+        public IdentityProviderServiceCredentials(string providerUri, string moduleGenerationId, string authScheme = DefaultAuthScheme)
+            : this(providerUri, moduleGenerationId, authScheme, Option.None<string>())
         {
         }
 
@@ -20,14 +21,14 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             this.Version = Preconditions.CheckNotNull(providerVersion, nameof(providerVersion));
         }
 
-        public string ProviderUri { get; }
-
-        public Option<string> Version { get; }
-
         public string AuthScheme { get; }
+
+        public CredentialType CredentialsType { get; }
 
         public string ModuleGenerationId { get; }
 
-        public CredentialType CredentialsType { get; }
+        public string ProviderUri { get; }
+
+        public Option<string> Version { get; }
     }
 }

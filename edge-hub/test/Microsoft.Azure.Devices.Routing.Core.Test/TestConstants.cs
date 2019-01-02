@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core.Test
 {
     using System;
+
     using Microsoft.Azure.Devices.Common.ErrorHandling;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Routing.Core.Checkpointers;
@@ -16,11 +17,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test
         public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         public static readonly TimeSpan DefaultBatchTimeout = TimeSpan.FromSeconds(1);
         public const int DefaultRetryCount = 10;
+        public const int DefaultBatchSize = 1000;
+
+        public static ICheckpointer DefaultCheckpointer { get; } = NullCheckpointer.Instance;
+
+        public static EndpointExecutorConfig DefaultConfig { get; } = new EndpointExecutorConfig(DefaultTimeout, DefaultRetryStrategy, DefaultRevivePeriod);
+
+        public static AsyncEndpointExecutorOptions DefaultOptions { get; } = new AsyncEndpointExecutorOptions(DefaultBatchSize, DefaultBatchTimeout);
 
         public static RetryStrategy DefaultRetryStrategy { get; } = new ExponentialBackoffStrategy(DefaultRetryCount, DefaultMinBackoff, DefaultMaxBackoff, DefaultDeltaBackoff);
-        public static EndpointExecutorConfig DefaultConfig { get; } = new EndpointExecutorConfig(DefaultTimeout, DefaultRetryStrategy, DefaultRevivePeriod);
-        public static AsyncEndpointExecutorOptions DefaultOptions { get; } = new AsyncEndpointExecutorOptions(DefaultBatchSize, DefaultBatchTimeout);
-        public static ICheckpointer DefaultCheckpointer { get; } = NullCheckpointer.Instance;
-        public const int DefaultBatchSize = 1000;
     }
 }

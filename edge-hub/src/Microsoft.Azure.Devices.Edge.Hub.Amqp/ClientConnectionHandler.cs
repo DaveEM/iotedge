@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
     using System.Linq;
     using System.Threading.Tasks;
     using System.Web;
+
     using Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
@@ -76,6 +77,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                         {
                             nonCorrelatedLinkHandler = methodSendingLinkHandler;
                         }
+
                         break;
 
                     case LinkType.MethodSending:
@@ -84,6 +86,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                         {
                             nonCorrelatedLinkHandler = methodReceivingLinkHandler;
                         }
+
                         break;
 
                     case LinkType.TwinReceiving:
@@ -92,6 +95,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                         {
                             nonCorrelatedLinkHandler = twinSendingLinkHandler;
                         }
+
                         break;
 
                     case LinkType.TwinSending:
@@ -100,8 +104,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                         {
                             nonCorrelatedLinkHandler = twinReceivingLinkHandler;
                         }
+
                         break;
                 }
+
                 await (nonCorrelatedLinkHandler?.CloseAsync(Constants.DefaultTimeout) ?? Task.CompletedTask);
                 this.registry[linkHandler.Type] = linkHandler;
             }
@@ -149,6 +155,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                 this.Identity = identity;
             }
 
+            public IIdentity Identity { get; }
+
+            public bool IsActive => this.isActive;
+
             public Task CloseAsync(Exception ex)
             {
                 if (this.isActive.GetAndSet(false))
@@ -156,6 +166,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                     Events.ClosingProxy(this.Identity, ex);
                     return this.clientConnectionHandler.CloseAllLinks();
                 }
+
                 return Task.CompletedTask;
             }
 
@@ -166,6 +177,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                     Events.LinkNotFound(LinkType.ModuleMessages, this.Identity, "C2D message");
                     return Task.CompletedTask;
                 }
+
                 message.SystemProperties[SystemProperties.To] = this.Identity is IModuleIdentity moduleIdentity
                     ? $"/devices/{HttpUtility.UrlEncode(moduleIdentity.DeviceId)}/modules/{HttpUtility.UrlEncode(moduleIdentity.ModuleId)}"
                     : $"/devices/{HttpUtility.UrlEncode(this.Identity.Id)}";
@@ -180,6 +192,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                     Events.LinkNotFound(LinkType.ModuleMessages, this.Identity, "message");
                     return Task.CompletedTask;
                 }
+
                 message.SystemProperties[SystemProperties.InputName] = input;
                 Events.SendingTelemetryMessage(this.Identity);
                 return ((ISendingLinkHandler)linkHandler).SendMessage(message);
@@ -194,14 +207,16 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                 }
 
                 IMessage message = new EdgeMessage.Builder(request.Data)
-                    .SetProperties(new Dictionary<string, string>
-                    {
-                        [Constants.MessagePropertiesMethodNameKey] = request.Name
-                    })
-                    .SetSystemProperties(new Dictionary<string, string>
-                    {
-                        [SystemProperties.CorrelationId] = request.CorrelationId
-                    })
+                    .SetProperties(
+                        new Dictionary<string, string>
+                        {
+                            [Constants.MessagePropertiesMethodNameKey] = request.Name
+                        })
+                    .SetSystemProperties(
+                        new Dictionary<string, string>
+                        {
+                            [SystemProperties.CorrelationId] = request.CorrelationId
+                        })
                     .Build();
                 await ((ISendingLinkHandler)linkHandler).SendMessage(message);
                 Events.SentMethodInvocation(this.Identity);
@@ -232,10 +247,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                 return ((ISendingLinkHandler)linkHandler).SendMessage(twin);
             }
 
-            public bool IsActive => this.isActive;
-
-            public IIdentity Identity { get; }
-
             public void SetInactive()
             {
                 Events.SettingProxyInactive(this.Identity);
@@ -263,26 +274,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
                 SendingTwinUpdate
             }
 
-            internal static void ClosingProxy(IIdentity identity, Exception ex)
-            {
-                Log.LogInformation((int)EventIds.ClosingProxy, ex, $"Closing AMQP device proxy for {identity.Id} because no handler was registered.");
-            }
-
-            internal static void LinkNotFound(LinkType linkType, IIdentity identity, string operation)
-            {
-                Log.LogWarning((int)EventIds.LinkNotFound, $"Unable to send {operation} to {identity.Id} because {linkType} link was not found.");
-            }
-
-            internal static void SettingProxyInactive(IIdentity identity)
-            {
-                Log.LogInformation((int)EventIds.SettingProxyInactive, $"Setting proxy inactive for {identity.Id}.");
-            }
-
-            internal static void InitializedDeviceListener(IIdentity identity)
-            {
-                Log.LogInformation((int)EventIds.InitializedDeviceListener, $"Initialized device listener in the AMQP protocol head for {identity.Id}");
-            }
-
             public static void SendingC2DMessage(IIdentity identity)
             {
                 Log.LogDebug((int)EventIds.SendingC2DMessage, $"Sending C2D message to {identity.Id}");
@@ -306,6 +297,26 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
             public static void SendingTwinUpdate(IIdentity identity)
             {
                 Log.LogDebug((int)EventIds.SendingTwinUpdate, $"Sending twin update to {identity.Id}");
+            }
+
+            internal static void ClosingProxy(IIdentity identity, Exception ex)
+            {
+                Log.LogInformation((int)EventIds.ClosingProxy, ex, $"Closing AMQP device proxy for {identity.Id} because no handler was registered.");
+            }
+
+            internal static void LinkNotFound(LinkType linkType, IIdentity identity, string operation)
+            {
+                Log.LogWarning((int)EventIds.LinkNotFound, $"Unable to send {operation} to {identity.Id} because {linkType} link was not found.");
+            }
+
+            internal static void SettingProxyInactive(IIdentity identity)
+            {
+                Log.LogInformation((int)EventIds.SettingProxyInactive, $"Setting proxy inactive for {identity.Id}.");
+            }
+
+            internal static void InitializedDeviceListener(IIdentity identity)
+            {
+                Log.LogInformation((int)EventIds.InitializedDeviceListener, $"Initialized device listener in the AMQP protocol head for {identity.Id}");
             }
         }
     }

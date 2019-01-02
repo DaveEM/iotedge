@@ -4,12 +4,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
+
+    using Constants = Microsoft.Azure.Devices.Edge.Hub.Amqp.Constants;
 
     /// <summary>
     /// Base class for all link handlers that send messages to connected devices/modules
@@ -29,9 +32,42 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             this.SendingAmqpLink = link;
         }
 
+        protected abstract QualityOfService QualityOfService { get; }
+
         protected ISendingAmqpLink SendingAmqpLink { get; }
 
-        protected abstract QualityOfService QualityOfService { get; }
+        public Task SendMessage(IMessage message)
+        {
+            if (this.Link.State != AmqpObjectState.Opened)
+            {
+                Events.InvalidLinkState(this);
+                return Task.CompletedTask;
+            }
+
+            try
+            {
+                AmqpMessage amqpMessage = this.MessageConverter.FromMessage(message);
+                ArraySegment<byte> deliveryTag = amqpMessage.DeliveryTag.Count == 0
+                    ? new ArraySegment<byte>(Guid.NewGuid().ToByteArray())
+                    : amqpMessage.DeliveryTag;
+                if (this.QualityOfService != QualityOfService.AtMostOnce)
+                {
+                    this.SendingAmqpLink.SendMessageNoWait(amqpMessage, deliveryTag, AmqpConstants.NullBinary);
+                }
+                else
+                {
+                    return this.SendingAmqpLink.SendMessageAsync(amqpMessage, deliveryTag, AmqpConstants.NullBinary, Constants.DefaultTimeout);
+                }
+
+                Events.MessageSent(this, message);
+            }
+            catch (Exception ex)
+            {
+                Events.ErrorProcessingMessage(ex, this);
+            }
+
+            return Task.CompletedTask;
+        }
 
         protected override Task OnOpenAsync(TimeSpan timeout)
         {
@@ -64,37 +100,24 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             return Task.CompletedTask;
         }
 
-        public Task SendMessage(IMessage message)
+        internal static FeedbackStatus GetFeedbackStatus(Delivery delivery)
         {
-            if (this.Link.State != AmqpObjectState.Opened)
+            if (delivery.State.DescriptorCode == AmqpConstants.AcceptedOutcome.DescriptorCode)
             {
-                Events.InvalidLinkState(this);
-                return Task.CompletedTask;
+                return FeedbackStatus.Complete;
             }
-
-            try
+            else if (delivery.State.DescriptorCode == AmqpConstants.RejectedOutcome.DescriptorCode)
             {
-                AmqpMessage amqpMessage = this.MessageConverter.FromMessage(message);
-                ArraySegment<byte> deliveryTag = amqpMessage.DeliveryTag.Count == 0
-                    ? new ArraySegment<byte>(Guid.NewGuid().ToByteArray())
-                    : amqpMessage.DeliveryTag;
-                if (this.QualityOfService != QualityOfService.AtMostOnce)
-                {
-                    this.SendingAmqpLink.SendMessageNoWait(amqpMessage, deliveryTag, AmqpConstants.NullBinary);
-                }
-                else
-                {
-                    return this.SendingAmqpLink.SendMessageAsync(amqpMessage, deliveryTag, AmqpConstants.NullBinary, Amqp.Constants.DefaultTimeout);
-                }
-
-                Events.MessageSent(this, message);
+                return FeedbackStatus.Reject;
             }
-            catch (Exception ex)
+            else if (delivery.State.DescriptorCode == AmqpConstants.ReleasedOutcome.DescriptorCode)
             {
-                Events.ErrorProcessingMessage(ex, this);
+                return FeedbackStatus.Abandon;
             }
-
-            return Task.CompletedTask;
+            else
+            {
+                throw new InvalidOperationException($"Unknown disposition outcome - {delivery.State.DescriptorCode}");
+            }
         }
 
         internal void DispositionListener(Delivery delivery) => this.DisposeMessageAsync(delivery);
@@ -117,26 +140,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             }
         }
 
-        internal static FeedbackStatus GetFeedbackStatus(Delivery delivery)
-        {
-            if (delivery.State.DescriptorCode == AmqpConstants.AcceptedOutcome.DescriptorCode)
-            {
-                return FeedbackStatus.Complete;
-            }
-            else if (delivery.State.DescriptorCode == AmqpConstants.RejectedOutcome.DescriptorCode)
-            {
-                return FeedbackStatus.Reject;
-            }
-            else if (delivery.State.DescriptorCode == AmqpConstants.ReleasedOutcome.DescriptorCode)
-            {
-                return FeedbackStatus.Abandon;
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unknown disposition outcome - {delivery.State.DescriptorCode}");
-            }
-        }
-
         static class Events
         {
             static readonly ILogger Log = Logger.Factory.CreateLogger<SendingLinkHandler>();
@@ -153,11 +156,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             public static void InvalidLinkState(SendingLinkHandler handler)
             {
                 Log.LogWarning((int)EventIds.InvalidLinkState, $"Cannot send messages when {handler.Type} link state is {handler.Link.State} for {handler.ClientId}");
-            }
-
-            internal static void ErrorProcessingMessage(Exception e, SendingLinkHandler handler)
-            {
-                Log.LogWarning((int)EventIds.ErrorProcessing, e, $"Error processing message in {handler.Type} link for {handler.ClientId}");
             }
 
             public static void ErrorDisposingMessage(Exception e, SendingLinkHandler handler)
@@ -179,6 +177,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
                 }
 
                 Log.LogDebug((int)EventIds.MessageSent, $"Sent message with id {GetMessageId()} to device {handler.ClientId}");
+            }
+
+            internal static void ErrorProcessingMessage(Exception e, SendingLinkHandler handler)
+            {
+                Log.LogWarning((int)EventIds.ErrorProcessing, e, $"Error processing message in {handler.Type} link for {handler.ClientId}");
             }
         }
     }

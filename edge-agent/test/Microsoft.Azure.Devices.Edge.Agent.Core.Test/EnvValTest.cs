@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 {
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class EnvValTest

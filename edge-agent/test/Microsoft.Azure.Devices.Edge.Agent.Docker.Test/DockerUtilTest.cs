@@ -3,10 +3,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
 {
     using System;
     using System.Collections.Generic;
+
     using global::Docker.DotNet.Models;
-    using Microsoft.Azure.Devices.Edge.Agent.Docker;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Unit]

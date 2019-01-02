@@ -6,13 +6,16 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using App.Metrics;
     using App.Metrics.Counter;
     using App.Metrics.Timer;
+
     using Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine;
     using Microsoft.Azure.Devices.Routing.Core.Util;
     using Microsoft.Azure.Devices.Routing.Core.Util.Concurrency;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
 
     public class StoringAsyncEndpointExecutor : IEndpointExecutor
@@ -26,11 +29,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
         readonly EndpointExecutorFsm machine;
         readonly CancellationTokenSource cts = new CancellationTokenSource();
 
-        public Endpoint Endpoint => this.machine.Endpoint;
-
-        public EndpointExecutorStatus Status => this.machine.Status;
-
-        public StoringAsyncEndpointExecutor(Endpoint endpoint,
+        public StoringAsyncEndpointExecutor(
+            Endpoint endpoint,
             ICheckpointer checkpointer,
             EndpointExecutorConfig config,
             AsyncEndpointExecutorOptions options,
@@ -45,6 +45,10 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
             this.sendMessageTask = Task.Run(this.SendMessagesPump);
         }
 
+        public Endpoint Endpoint => this.machine.Endpoint;
+
+        public EndpointExecutorStatus Status => this.machine.Status;
+
         public async Task Invoke(IMessage message)
         {
             try
@@ -53,18 +57,68 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
                 {
                     throw new InvalidOperationException($"Endpoint executor for endpoint {this.Endpoint} is closed.");
                 }
+
                 using (Metrics.StoreLatency(this.Endpoint.Id))
                 {
                     long offset = await this.messageStore.Add(this.Endpoint.Id, message);
                     this.checkpointer.Propose(message);
                     Events.AddMessageSuccess(this, offset);
                 }
+
                 this.hasMessagesInQueue.Set();
                 Metrics.StoredCountIncrement(this.Endpoint.Id);
             }
             catch (Exception ex)
             {
                 Events.AddMessageFailure(this, ex);
+                throw;
+            }
+        }
+
+        public void Dispose() => this.Dispose(true);
+
+        public async Task CloseAsync()
+        {
+            Events.Close(this);
+
+            try
+            {
+                if (!this.closed.GetAndSet(true))
+                {
+                    this.cts.Cancel();
+                    await (this.messageStore?.RemoveEndpoint(this.Endpoint.Id) ?? Task.CompletedTask);
+                    await (this.sendMessageTask ?? Task.CompletedTask);
+                }
+
+                Events.CloseSuccess(this);
+            }
+            catch (Exception ex)
+            {
+                Events.CloseFailure(this, ex);
+                throw;
+            }
+        }
+
+        public async Task SetEndpoint(Endpoint newEndpoint)
+        {
+            Events.SetEndpoint(this);
+
+            try
+            {
+                Preconditions.CheckNotNull(newEndpoint);
+                Preconditions.CheckArgument(newEndpoint.Id.Equals(this.Endpoint.Id), $"Can only set new endpoint with same id. Given {newEndpoint.Id}, expected {this.Endpoint.Id}");
+
+                if (this.closed)
+                {
+                    throw new InvalidOperationException($"Endpoint executor for endpoint {this.Endpoint} is closed.");
+                }
+
+                await this.machine.RunAsync(Commands.UpdateEndpoint(newEndpoint));
+                Events.SetEndpointSuccess(this);
+            }
+            catch (Exception ex)
+            {
+                Events.SetEndpointFailure(this, ex);
                 throw;
             }
         }
@@ -112,8 +166,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
             await command.Completion;
         }
 
-        public void Dispose() => this.Dispose(true);
-
         void Dispose(bool disposing)
         {
             if (disposing)
@@ -121,82 +173,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
                 this.cts.Dispose();
                 this.machine.Dispose();
             }
-        }
-
-        public async Task CloseAsync()
-        {
-            Events.Close(this);
-
-            try
-            {
-                if (!this.closed.GetAndSet(true))
-                {
-                    this.cts.Cancel();
-                    await (this.messageStore?.RemoveEndpoint(this.Endpoint.Id) ?? Task.CompletedTask);
-                    await (this.sendMessageTask ?? Task.CompletedTask);
-                }
-                Events.CloseSuccess(this);
-            }
-            catch (Exception ex)
-            {
-                Events.CloseFailure(this, ex);
-                throw;
-            }
-        }
-
-        public async Task SetEndpoint(Endpoint newEndpoint)
-        {
-            Events.SetEndpoint(this);
-
-            try
-            {
-                Preconditions.CheckNotNull(newEndpoint);
-                Preconditions.CheckArgument(newEndpoint.Id.Equals(this.Endpoint.Id), $"Can only set new endpoint with same id. Given {newEndpoint.Id}, expected {this.Endpoint.Id}");
-
-                if (this.closed)
-                {
-                    throw new InvalidOperationException($"Endpoint executor for endpoint {this.Endpoint} is closed.");
-                }
-                await this.machine.RunAsync(Commands.UpdateEndpoint(newEndpoint));
-                Events.SetEndpointSuccess(this);
-            }
-            catch (Exception ex)
-            {
-                Events.SetEndpointFailure(this, ex);
-                throw;
-            }
-        }
-
-        static class Metrics
-        {
-            static readonly CounterOptions EndpointMessageStoredCountOptions = new CounterOptions
-            {
-                Name = "EndpointMessageStoredCount",
-                MeasurementUnit = Unit.Events
-            };
-            static readonly CounterOptions EndpointMessageDrainedCountOptions = new CounterOptions
-            {
-                Name = "EndpointMessageDrainedCount",
-                MeasurementUnit = Unit.Events
-            };
-            static readonly TimerOptions EndpointMessageLatencyOptions = new TimerOptions
-            {
-                Name = "EndpointMessageStoredLatencyMs",
-                MeasurementUnit = Unit.None,
-                DurationUnit = TimeUnit.Milliseconds,
-                RateUnit = TimeUnit.Seconds
-            };
-
-            internal static MetricTags GetTags(string id)
-            {
-                return new MetricTags("EndpointId", id);
-            }
-
-            public static void StoredCountIncrement(string identity) => Edge.Util.Metrics.CountIncrement(GetTags(identity), EndpointMessageStoredCountOptions, 1);
-
-            public static void DrainedCountIncrement(string identity, long amount) => Edge.Util.Metrics.CountIncrement(GetTags(identity), EndpointMessageDrainedCountOptions, amount);
-
-            public static IDisposable StoreLatency(string identity) => Edge.Util.Metrics.Latency(GetTags(identity), EndpointMessageLatencyOptions);
         }
 
         static class Events
@@ -289,6 +265,40 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
             public static void CloseFailure(StoringAsyncEndpointExecutor executor, Exception ex)
             {
                 Log.LogError((int)EventIds.CloseFailure, ex, "[CloseFailure] Close failed. EndpointId: {0}, EndpointName: {1}", executor.Endpoint.Id, executor.Endpoint.Name);
+            }
+        }
+
+        static class Metrics
+        {
+            static readonly CounterOptions EndpointMessageStoredCountOptions = new CounterOptions
+            {
+                Name = "EndpointMessageStoredCount",
+                MeasurementUnit = Unit.Events
+            };
+
+            static readonly CounterOptions EndpointMessageDrainedCountOptions = new CounterOptions
+            {
+                Name = "EndpointMessageDrainedCount",
+                MeasurementUnit = Unit.Events
+            };
+
+            static readonly TimerOptions EndpointMessageLatencyOptions = new TimerOptions
+            {
+                Name = "EndpointMessageStoredLatencyMs",
+                MeasurementUnit = Unit.None,
+                DurationUnit = TimeUnit.Milliseconds,
+                RateUnit = TimeUnit.Seconds
+            };
+
+            public static void StoredCountIncrement(string identity) => Edge.Util.Metrics.CountIncrement(GetTags(identity), EndpointMessageStoredCountOptions, 1);
+
+            public static void DrainedCountIncrement(string identity, long amount) => Edge.Util.Metrics.CountIncrement(GetTags(identity), EndpointMessageDrainedCountOptions, amount);
+
+            public static IDisposable StoreLatency(string identity) => Edge.Util.Metrics.Latency(GetTags(identity), EndpointMessageLatencyOptions);
+
+            internal static MetricTags GetTags(string id)
+            {
+                return new MetricTags("EndpointId", id);
             }
         }
     }

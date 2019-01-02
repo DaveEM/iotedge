@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Types
         Double,
         String,
         Null,
+
         Object
         //DateTime,
         //Timespan,

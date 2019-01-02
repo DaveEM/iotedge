@@ -5,16 +5,14 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class ModuleSet : IEquatable<ModuleSet>
     {
-        public static ModuleSet Empty { get; } = new ModuleSet(ImmutableDictionary<string, IModule>.Empty as IImmutableDictionary<string, IModule>);
-
         static readonly DictionaryComparer<string, IModule> ModuleDictionaryComparer = new DictionaryComparer<string, IModule>();
-
-        public IImmutableDictionary<string, IModule> Modules { get; }
 
         [JsonConstructor]
         public ModuleSet(IDictionary<string, IModule> modules)
@@ -27,7 +25,18 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             this.Modules = modules ?? Empty.Modules;
         }
 
+        public static ModuleSet Empty { get; } = new ModuleSet(ImmutableDictionary<string, IModule>.Empty as IImmutableDictionary<string, IModule>);
+
+        public IImmutableDictionary<string, IModule> Modules { get; }
+
         public static ModuleSet Create(params IModule[] modules) => new ModuleSet(modules.ToDictionary(m => m.Name, m => m));
+
+        public static bool operator ==(ModuleSet set1, ModuleSet set2) =>
+            ((object)set1 == null && (object)set2 == null)
+            ||
+            ((object)set1 != null && set1.Equals(set2));
+
+        public static bool operator !=(ModuleSet set1, ModuleSet set2) => !(set1 == set2);
 
         public bool TryGetModule(string key, out IModule module) => this.Modules.TryGetValue(key, out module);
 
@@ -74,15 +83,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
         public override bool Equals(object obj) => this.Equals(obj as ModuleSet);
 
         public bool Equals(ModuleSet other) => other != null &&
-                   ModuleDictionaryComparer.Equals(this.Modules.ToImmutableDictionary(), other.Modules.ToImmutableDictionary());
+                                               ModuleDictionaryComparer.Equals(this.Modules.ToImmutableDictionary(), other.Modules.ToImmutableDictionary());
 
         public override int GetHashCode() => 1729798618 + ModuleDictionaryComparer.GetHashCode(this.Modules.ToImmutableDictionary());
-
-        public static bool operator ==(ModuleSet set1, ModuleSet set2) =>
-                   ((object)set1 == null && (object)set2 == null)
-                   ||
-                   ((object)set1 != null && set1.Equals(set2));
-
-        public static bool operator !=(ModuleSet set1, ModuleSet set2) => !(set1 == set2);
     }
 }

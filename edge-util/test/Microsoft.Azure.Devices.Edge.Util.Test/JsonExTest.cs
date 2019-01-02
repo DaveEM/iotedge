@@ -3,9 +3,12 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
 {
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+
     using Xunit;
 
     [Unit]
@@ -15,23 +18,25 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
         public void TestStripMetadata()
         {
             // Arrange
-            JToken input = JToken.FromObject(new Dictionary<string, object>
-            {
-                { "foo", 10 },
-                { "bar", 20 },
-                { "$metadata", new { baz = 30 } },
-                { "$version", 40 }
-            });
+            JToken input = JToken.FromObject(
+                new Dictionary<string, object>
+                {
+                    { "foo", 10 },
+                    { "bar", 20 },
+                    { "$metadata", new { baz = 30 } },
+                    { "$version", 40 }
+                });
 
             // Act
             JsonEx.StripMetadata(input);
 
             // Assert
-            JToken expected = JToken.FromObject(new
-            {
-                foo = 10,
-                bar = 20
-            });
+            JToken expected = JToken.FromObject(
+                new
+                {
+                    foo = 10,
+                    bar = 20
+                });
 
             Assert.True(JToken.DeepEquals(expected, input));
         }
@@ -40,34 +45,37 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
         public void TestStripMetadata2()
         {
             // Arrange
-            JToken input = JToken.FromObject(new Dictionary<string, object>
-            {
-                { "foo", 10 },
-                { "bar", 20 },
-                { "$metadata", new { baz = 30 } },
-                { "$version", 40 },
-                { "dontStripThis", new Dictionary<string, object>
+            JToken input = JToken.FromObject(
+                new Dictionary<string, object>
+                {
+                    { "foo", 10 },
+                    { "bar", 20 },
+                    { "$metadata", new { baz = 30 } },
+                    { "$version", 40 },
                     {
-                        { "$metadata", new { baz = 30 } },
-                        { "$version", 40 }
+                        "dontStripThis", new Dictionary<string, object>
+                        {
+                            { "$metadata", new { baz = 30 } },
+                            { "$version", 40 }
+                        }
                     }
-                }
-            });
+                });
 
             // Act
             JsonEx.StripMetadata(input);
 
             // Assert
-            JToken expected = JToken.FromObject(new
-            {
-                foo = 10,
-                bar = 20,
-                dontStripThis = new Dictionary<string, object>
+            JToken expected = JToken.FromObject(
+                new
                 {
-                    { "$metadata", new { baz = 30 } },
-                    { "$version", 40 }
-                }
-            });
+                    foo = 10,
+                    bar = 20,
+                    dontStripThis = new Dictionary<string, object>
+                    {
+                        { "$metadata", new { baz = 30 } },
+                        { "$version", 40 }
+                    }
+                });
 
             Assert.True(JToken.DeepEquals(expected, input));
         }

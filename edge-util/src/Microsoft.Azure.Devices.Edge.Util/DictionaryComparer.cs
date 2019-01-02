@@ -16,13 +16,13 @@ namespace Microsoft.Azure.Devices.Edge.Util
                 x.Keys.Count() == y.Keys.Count() &&
                 x.Keys.All(
                     key => y.ContainsKey(key) &&
-                    (
-                        (x[key] == null && y[key] == null) ||
-                        (
-                            x[key] != null &&
-                            x[key].Equals(y[key])
-                        )
-                    )
+                           (
+                               (x[key] == null && y[key] == null) ||
+                               (
+                                   x[key] != null &&
+                                   x[key].Equals(y[key])
+                               )
+                           )
                 )
             );
 
@@ -41,13 +41,13 @@ namespace Microsoft.Azure.Devices.Edge.Util
                 x.Keys.Count() == y.Keys.Count() &&
                 x.Keys.All(
                     key => y.ContainsKey(key) &&
-                    (
-                        (x[key] == null && y[key] == null) ||
-                        (
-                            x[key] != null &&
-                            x[key].Equals(y[key])
-                        )
-                    )
+                           (
+                               (x[key] == null && y[key] == null) ||
+                               (
+                                   x[key] != null &&
+                                   x[key].Equals(y[key])
+                               )
+                           )
                 )
             );
 

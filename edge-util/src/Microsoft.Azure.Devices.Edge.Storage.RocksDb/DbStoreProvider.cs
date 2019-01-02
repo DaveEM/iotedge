@@ -5,9 +5,10 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Threading;
-    using Microsoft.Azure.Devices.Edge.Storage;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
+
     using RocksDbSharp;
 
     public class DbStoreProvider : IDbStoreProvider
@@ -26,19 +27,6 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
             this.optionsProvider = optionsProvider;
             this.entityDbStoreDictionary = new ConcurrentDictionary<string, IDbStore>(entityDbStoreDictionary);
             this.compactionTimer = new Timer(this.RunCompaction, null, CompactionPeriod, CompactionPeriod);
-        }
-
-        void RunCompaction(object state)
-        {
-            Events.StartingCompaction();
-            foreach (KeyValuePair<string, IDbStore> entityDbStore in this.entityDbStoreDictionary)
-            {
-                if (entityDbStore.Value is ColumnFamilyDbStore cfDbStore)
-                {
-                    Events.CompactingStore(entityDbStore.Key);
-                    this.db.Compact(cfDbStore.Handle);
-                }
-            }
         }
 
         public static DbStoreProvider Create(IRocksDbOptionsProvider optionsProvider, string path, IEnumerable<string> partitionsList)
@@ -85,6 +73,12 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
             }
         }
 
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -94,10 +88,17 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
             }
         }
 
-        public void Dispose()
+        void RunCompaction(object state)
         {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
+            Events.StartingCompaction();
+            foreach (KeyValuePair<string, IDbStore> entityDbStore in this.entityDbStoreDictionary)
+            {
+                if (entityDbStore.Value is ColumnFamilyDbStore cfDbStore)
+                {
+                    Events.CompactingStore(entityDbStore.Key);
+                    this.db.Compact(cfDbStore.Handle);
+                }
+            }
         }
 
         static class Events

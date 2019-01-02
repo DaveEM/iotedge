@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Devices.Routing.Core
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Checkpointers;
     using Microsoft.Azure.Devices.Routing.Core.Endpoints;
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
@@ -26,14 +27,6 @@ namespace Microsoft.Azure.Devices.Routing.Core
         readonly string iotHubName;
         static readonly ICollection<IMessage> EmptyMessages = ImmutableList<IMessage>.Empty;
 
-        public string Id { get; }
-
-        public IEnumerable<Endpoint> Endpoints => this.Executors.Values.Select(ex => ex.Endpoint);
-
-        public Option<long> Offset => this.checkpointer.Offset > Checkpointer.InvalidOffset ? Option.Some(this.checkpointer.Offset) : Option.None<long>();
-
-        ImmutableDictionary<string, IEndpointExecutor> Executors => this.executors;
-
         Dispatcher(string id, string iotHubName, IEnumerable<IEndpointExecutor> execs, IEndpointExecutorFactory endpointExecutorFactory, ICheckpointer checkpointer)
         {
             this.Id = Preconditions.CheckNotNull(id);
@@ -43,10 +36,18 @@ namespace Microsoft.Azure.Devices.Routing.Core
             this.cts = new CancellationTokenSource();
             this.checkpointer = Preconditions.CheckNotNull(checkpointer);
 
-            ImmutableDictionary<string, IEndpointExecutor> execsDict =  Preconditions.CheckNotNull(execs)
+            ImmutableDictionary<string, IEndpointExecutor> execsDict = Preconditions.CheckNotNull(execs)
                 .ToImmutableDictionary(key => key.Endpoint.Id, value => value);
             this.executors = new AtomicReference<ImmutableDictionary<string, IEndpointExecutor>>(execsDict);
         }
+
+        public IEnumerable<Endpoint> Endpoints => this.Executors.Values.Select(ex => ex.Endpoint);
+
+        public string Id { get; }
+
+        public Option<long> Offset => this.checkpointer.Offset > Checkpointer.InvalidOffset ? Option.Some(this.checkpointer.Offset) : Option.None<long>();
+
+        ImmutableDictionary<string, IEndpointExecutor> Executors => this.executors;
 
         public static async Task<Dispatcher> CreateAsync(string id, string iotHubName, ISet<Endpoint> endpoints, IEndpointExecutorFactory factory)
         {
@@ -101,20 +102,6 @@ namespace Microsoft.Azure.Devices.Routing.Core
             }
         }
 
-        async Task DispatchInternal(IEndpointExecutor exec, IMessage message)
-        {
-            try
-            {
-                await exec.Invoke(message);
-            }
-            catch (Exception ex) when (ex is InvalidOperationException || ex is OperationCanceledException)
-            {
-                // disabled
-                // Executor is closed, ignore the send
-                // TODO add logging?
-            }
-        }
-
         public async Task SetEndpoint(Endpoint endpoint)
         {
             Preconditions.CheckNotNull(endpoint);
@@ -140,24 +127,6 @@ namespace Microsoft.Azure.Devices.Routing.Core
             }
         }
 
-        async Task SetEndpointInternal(Endpoint endpoint)
-        {
-            IEndpointExecutor executor;
-            ImmutableDictionary<string, IEndpointExecutor> snapshot = this.executors;
-            if (!snapshot.TryGetValue(endpoint.Id, out executor))
-            {
-                executor = await this.endpointExecutorFactory.CreateAsync(endpoint);
-                if (!this.executors.CompareAndSet(snapshot, snapshot.Add(endpoint.Id, executor)))
-                {
-                    throw new InvalidOperationException($"Invalid set endpoint operation for executor {endpoint.Id}");
-                }
-            }
-            else
-            {
-                await executor.SetEndpoint(endpoint);
-            }
-        }
-
         public async Task RemoveEndpoint(string id)
         {
             Preconditions.CheckNotNull(id);
@@ -180,21 +149,6 @@ namespace Microsoft.Azure.Devices.Routing.Core
                 {
                     await this.RemoveEndpointInternal(id);
                 }
-            }
-        }
-
-        async Task RemoveEndpointInternal(string id)
-        {
-            IEndpointExecutor executor;
-            ImmutableDictionary<string, IEndpointExecutor> snapshot = this.executors;
-            if (snapshot.TryGetValue(id, out executor))
-            {
-                if (!this.executors.CompareAndSet(snapshot, snapshot.Remove(id)))
-                {
-                    throw new InvalidOperationException($"Invalid remove endpoint operation for executor {id}");
-                }
-                await executor.CloseAsync();
-                executor.Dispose();
             }
         }
 
@@ -224,14 +178,6 @@ namespace Microsoft.Azure.Devices.Routing.Core
             }
         }
 
-        void CheckClosed()
-        {
-            if (this.closed)
-            {
-                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "{0} is closed.", this));
-            }
-        }
-
         public async Task CloseAsync(CancellationToken token)
         {
             using (await this.sync.LockAsync(CancellationToken.None))
@@ -244,12 +190,15 @@ namespace Microsoft.Azure.Devices.Routing.Core
                     {
                         await exec.CloseAsync();
                     }
+
                     await this.checkpointer.CloseAsync(token);
                 }
             }
         }
 
         public void Dispose() => this.Dispose(true);
+
+        public override string ToString() => string.Format(CultureInfo.InvariantCulture, "Dispatcher({0})", this.Id);
 
         protected virtual void Dispose(bool disposing)
         {
@@ -261,13 +210,68 @@ namespace Microsoft.Azure.Devices.Routing.Core
                 {
                     executor.Dispose();
                 }
+
                 this.checkpointer.Dispose();
                 this.cts.Dispose();
                 this.sync.Dispose();
             }
         }
 
-        public override string ToString() => string.Format(CultureInfo.InvariantCulture, "Dispatcher({0})", this.Id);
+        async Task DispatchInternal(IEndpointExecutor exec, IMessage message)
+        {
+            try
+            {
+                await exec.Invoke(message);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException || ex is OperationCanceledException)
+            {
+                // disabled
+                // Executor is closed, ignore the send
+                // TODO add logging?
+            }
+        }
+
+        async Task SetEndpointInternal(Endpoint endpoint)
+        {
+            IEndpointExecutor executor;
+            ImmutableDictionary<string, IEndpointExecutor> snapshot = this.executors;
+            if (!snapshot.TryGetValue(endpoint.Id, out executor))
+            {
+                executor = await this.endpointExecutorFactory.CreateAsync(endpoint);
+                if (!this.executors.CompareAndSet(snapshot, snapshot.Add(endpoint.Id, executor)))
+                {
+                    throw new InvalidOperationException($"Invalid set endpoint operation for executor {endpoint.Id}");
+                }
+            }
+            else
+            {
+                await executor.SetEndpoint(endpoint);
+            }
+        }
+
+        async Task RemoveEndpointInternal(string id)
+        {
+            IEndpointExecutor executor;
+            ImmutableDictionary<string, IEndpointExecutor> snapshot = this.executors;
+            if (snapshot.TryGetValue(id, out executor))
+            {
+                if (!this.executors.CompareAndSet(snapshot, snapshot.Remove(id)))
+                {
+                    throw new InvalidOperationException($"Invalid remove endpoint operation for executor {id}");
+                }
+
+                await executor.CloseAsync();
+                executor.Dispose();
+            }
+        }
+
+        void CheckClosed()
+        {
+            if (this.closed)
+            {
+                throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "{0} is closed.", this));
+            }
+        }
 
         class CheckpointerEndpointExecutorFactory : IEndpointExecutorFactory
         {
@@ -298,7 +302,7 @@ namespace Microsoft.Azure.Devices.Routing.Core
             public Task<IEndpointExecutor> CreateAsync(Endpoint endpoint, ICheckpointer checkpointer, EndpointExecutorConfig endpointExecutorConfig)
             {
                 return this.executorFactory.CreateAsync(endpoint, checkpointer, endpointExecutorConfig);
-            }            
+            }
         }
 
         static class Events
@@ -326,6 +330,5 @@ namespace Microsoft.Azure.Devices.Routing.Core
                 }
             }
         }
-
     }
 }

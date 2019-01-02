@@ -4,9 +4,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test
     using System;
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Config;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Routing.Core;
+
     using Xunit;
 
     [Unit]

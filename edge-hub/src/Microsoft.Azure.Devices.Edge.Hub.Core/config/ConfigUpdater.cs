@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Config
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Azure.Devices.Routing.Core;
@@ -38,11 +39,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Config
                     }
                     else
                     {
-                        await edgeHubConfig.ForEachAsync(async ehc =>
-                        {
-                            await this.UpdateRoutes(ehc.Routes, false);
-                            this.UpdateStoreAndForwardConfig(ehc.StoreAndForwardConfiguration);
-                        });
+                        await edgeHubConfig.ForEachAsync(
+                            async ehc =>
+                            {
+                                await this.UpdateRoutes(ehc.Routes, false);
+                                this.UpdateStoreAndForwardConfig(ehc.StoreAndForwardConfiguration);
+                            });
                         Events.Initialized();
                     }
                 }
@@ -88,6 +90,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Config
                         await this.router.SetRoute(route);
                     }
                 }
+
                 Events.RoutesUpdated(routesList);
             }
         }
@@ -124,13 +127,17 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Config
 
             internal static void InitializingError(Exception ex)
             {
-                Log.LogError((int)EventIds.InitializeError, ex,
+                Log.LogError(
+                    (int)EventIds.InitializeError,
+                    ex,
                     FormattableString.Invariant($"Error initializing edge hub configuration"));
             }
 
             internal static void UpdateError(Exception ex)
             {
-                Log.LogError((int)EventIds.UpdateError, ex,
+                Log.LogError(
+                    (int)EventIds.UpdateError,
+                    ex,
                     FormattableString.Invariant($"Error updating edge hub configuration"));
             }
 

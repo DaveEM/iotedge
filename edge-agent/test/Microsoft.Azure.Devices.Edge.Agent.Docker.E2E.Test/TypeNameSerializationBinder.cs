@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Docker.E2E.Test
 {
     using System;
+
     using Newtonsoft.Json.Serialization;
 
     /// <summary>

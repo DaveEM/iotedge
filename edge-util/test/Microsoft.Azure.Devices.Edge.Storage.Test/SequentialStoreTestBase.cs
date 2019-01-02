@@ -5,16 +5,15 @@ namespace Microsoft.Azure.Devices.Edge.Storage.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Edge.Storage;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Integration]
     public abstract class SequentialStoreTestBase
     {
-        protected abstract IEntityStore<byte[], TV> GetEntityStore<TV>(string entityName);
-
         [Fact]
         public async Task CreateTest()
         {
@@ -201,6 +200,8 @@ namespace Microsoft.Azure.Devices.Edge.Storage.Test
                 Assert.Equal(0, batch.Count);
             }
         }
+
+        protected abstract IEntityStore<byte[], TV> GetEntityStore<TV>(string entityName);
 
         static IEnumerable<object[]> GetDefaultHeadOffset()
         {

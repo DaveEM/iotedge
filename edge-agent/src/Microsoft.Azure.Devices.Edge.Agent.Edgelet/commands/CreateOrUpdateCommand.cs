@@ -7,10 +7,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Edgelet.Commands
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Edgelet.GeneratedCode;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Configuration;
+
     using Newtonsoft.Json;
 
     public class CreateOrUpdateCommand : ICommand
@@ -28,6 +30,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Edgelet.Commands
             this.operation = operation;
         }
 
+        enum Operation
+        {
+            Create,
+            Update,
+            UpdateAndStart
+        }
+
+        public string Id => this.id.Value;
+
         public static CreateOrUpdateCommand BuildCreate(
             IModuleManager moduleManager,
             IModule module,
@@ -44,22 +55,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Edgelet.Commands
             object settings,
             bool start) =>
             Build(moduleManager, module, identity, configSource, settings, start ? Operation.UpdateAndStart : Operation.Update);
-
-        static CreateOrUpdateCommand Build(IModuleManager moduleManager, IModule module, IModuleIdentity identity,
-            IConfigSource configSource, object settings, Operation operation)
-        {
-            Preconditions.CheckNotNull(moduleManager, nameof(moduleManager));
-            Preconditions.CheckNotNull(module, nameof(module));
-            Preconditions.CheckNotNull(identity, nameof(identity));
-            Preconditions.CheckNotNull(configSource, nameof(configSource));
-            Preconditions.CheckNotNull(settings, nameof(settings));
-
-            IEnumerable<EnvVar> envVars = GetEnvVars(module.Env, identity, configSource);
-            ModuleSpec moduleSpec = BuildModuleSpec(module, envVars, settings);
-            return new CreateOrUpdateCommand(moduleManager, moduleSpec, operation);
-        }
-
-        public string Id => this.id.Value;
 
         public Task ExecuteAsync(CancellationToken token)
         {
@@ -209,11 +204,23 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Edgelet.Commands
             return envVars;
         }
 
-        enum Operation
+        static CreateOrUpdateCommand Build(
+            IModuleManager moduleManager,
+            IModule module,
+            IModuleIdentity identity,
+            IConfigSource configSource,
+            object settings,
+            Operation operation)
         {
-            Create,
-            Update,
-            UpdateAndStart
+            Preconditions.CheckNotNull(moduleManager, nameof(moduleManager));
+            Preconditions.CheckNotNull(module, nameof(module));
+            Preconditions.CheckNotNull(identity, nameof(identity));
+            Preconditions.CheckNotNull(configSource, nameof(configSource));
+            Preconditions.CheckNotNull(settings, nameof(settings));
+
+            IEnumerable<EnvVar> envVars = GetEnvVars(module.Env, identity, configSource);
+            ModuleSpec moduleSpec = BuildModuleSpec(module, envVars, settings);
+            return new CreateOrUpdateCommand(moduleManager, moduleSpec, operation);
         }
     }
 }

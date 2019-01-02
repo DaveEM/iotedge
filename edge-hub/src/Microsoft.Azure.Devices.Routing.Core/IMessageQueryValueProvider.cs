@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Routing.Core
     using System;
     using System.Globalization;
     using System.Text;
+
     using Microsoft.Azure.Devices.Routing.Core.Query.Types;
 
     public interface IMessageQueryValueProvider

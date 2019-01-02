@@ -4,8 +4,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
-    using Microsoft.Azure.Devices.Edge.Hub.Amqp;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
@@ -33,15 +33,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             this.connectionHandler = Preconditions.CheckNotNull(connectionHandler, nameof(connectionHandler));
         }
 
-        protected IIdentity Identity { get; }
-
-        protected string ClientId => this.Identity.Id;
-
-        protected IMessageConverter<AmqpMessage> MessageConverter { get; }
-
-        protected IDeviceListener DeviceListener { get; private set; }
-
-        protected IDictionary<string, string> BoundVariables { get; }
+        public virtual string CorrelationId { get; } = Guid.NewGuid().ToString();
 
         public IAmqpLink Link { get; }
 
@@ -49,7 +41,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
 
         public abstract LinkType Type { get; }
 
-        public virtual string CorrelationId { get; } = Guid.NewGuid().ToString();
+        protected IDictionary<string, string> BoundVariables { get; }
+
+        protected string ClientId => this.Identity.Id;
+
+        protected IDeviceListener DeviceListener { get; private set; }
+
+        protected IIdentity Identity { get; }
+
+        protected IMessageConverter<AmqpMessage> MessageConverter { get; }
 
         public async Task OpenAsync(TimeSpan timeout)
         {
@@ -63,6 +63,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             await this.OnOpenAsync(timeout);
             await this.connectionHandler.RegisterLinkHandler(this);
             Events.Opened(this);
+        }
+
+        public async Task CloseAsync(TimeSpan timeout)
+        {
+            await this.Link.CloseAsync(timeout);
+            Events.Closed(this);
         }
 
         protected abstract Task OnOpenAsync(TimeSpan timeout);
@@ -93,12 +99,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
         {
             Events.Closed(this);
             this.connectionHandler.RemoveLinkHandler(this);
-        }
-
-        public async Task CloseAsync(TimeSpan timeout)
-        {
-            await this.Link.CloseAsync(timeout);
-            Events.Closed(this);
         }
 
         static class Events

@@ -4,8 +4,9 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
-    using Moq;
+
     using Xunit;
 
     [Unit]
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
         {
             // Arrange
             int callbackCalledCount = 0;
+
             Task Callback()
             {
                 Interlocked.Increment(ref callbackCalledCount);
@@ -38,6 +40,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
         {
             // Arrange
             int callbackCalledCount = 0;
+
             Task Callback()
             {
                 Interlocked.Increment(ref callbackCalledCount);
@@ -66,6 +69,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
         {
             // Arrange
             int callbackCalledCount = 0;
+
             Task Callback()
             {
                 Interlocked.Increment(ref callbackCalledCount);
@@ -96,7 +100,6 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
 
             // Assert
             Assert.Equal(2, callbackCalledCount);
-
         }
     }
 }

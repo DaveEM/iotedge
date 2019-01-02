@@ -3,7 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
+
     using Newtonsoft.Json;
 
     public class EdgeAgentDockerRuntimeModule : DockerRuntimeModule, IEdgeAgentModule
@@ -15,13 +17,25 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
             int exitCode,
             string statusDescription,
             DateTime lastStartTimeUtc,
-            DateTime lastExitTime,            
+            DateTime lastExitTime,
             ConfigurationInfo configuration,
             IDictionary<string, EnvVal> env,
             string version = "")
-            : base(Core.Constants.EdgeAgentModuleName, version, ModuleStatus.Running, RestartPolicy.Always, config,
-                exitCode, statusDescription, lastStartTimeUtc, lastExitTime,
-                0, DateTime.MinValue, runtimeStatus, configuration, env)
+            : base(
+                Core.Constants.EdgeAgentModuleName,
+                version,
+                ModuleStatus.Running,
+                RestartPolicy.Always,
+                config,
+                exitCode,
+                statusDescription,
+                lastStartTimeUtc,
+                lastExitTime,
+                0,
+                DateTime.MinValue,
+                runtimeStatus,
+                configuration,
+                env)
         {
             // You maybe wondering why we are setting this here again even though
             // the base class does this assignment. This is due to a behavior
@@ -37,22 +51,29 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
         }
 
         [JsonIgnore]
-        public override string Version { get; }
-
-        [JsonIgnore]
         public override ModuleStatus DesiredStatus { get; }
 
         [JsonIgnore]
-        public override RestartPolicy RestartPolicy { get; }
+        public override DateTime LastRestartTimeUtc { get; }
 
         [JsonIgnore]
         public override int RestartCount { get; }
 
         [JsonIgnore]
-        public override DateTime LastRestartTimeUtc { get; }
+        public override RestartPolicy RestartPolicy { get; }
+
+        [JsonIgnore]
+        public override string Version { get; }
 
         public override IModule WithRuntimeStatus(ModuleStatus newStatus) => new EdgeAgentDockerRuntimeModule(
-            (DockerReportedConfig)this.Config, newStatus, this.ExitCode, this.StatusDescription, this.LastStartTimeUtc,
-            this.LastExitTimeUtc, this.ConfigurationInfo, this.Env, this.Version);
+            (DockerReportedConfig)this.Config,
+            newStatus,
+            this.ExitCode,
+            this.StatusDescription,
+            this.LastStartTimeUtc,
+            this.LastExitTimeUtc,
+            this.ConfigurationInfo,
+            this.Env,
+            this.Version);
     }
 }

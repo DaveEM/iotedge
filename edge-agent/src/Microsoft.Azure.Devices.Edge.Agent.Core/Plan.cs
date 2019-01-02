@@ -3,19 +3,20 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class Plan
     {
-        public static Plan Empty { get; } = new Plan(ImmutableList<ICommand>.Empty);
-
-        public bool IsEmpty => this.Commands.IsEmpty;
-
         public Plan(IList<ICommand> commands)
         {
             this.Commands = Preconditions.CheckNotNull(commands.ToImmutableList(), nameof(commands));
         }
 
+        public static Plan Empty { get; } = new Plan(ImmutableList<ICommand>.Empty);
+
         public ImmutableList<ICommand> Commands { get; }
+
+        public bool IsEmpty => this.Commands.IsEmpty;
     }
 }

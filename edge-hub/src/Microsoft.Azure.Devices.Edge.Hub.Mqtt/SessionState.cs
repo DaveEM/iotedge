@@ -4,8 +4,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
     using System;
     using System.Collections.Generic;
     using System.Threading;
+
     using DotNetty.Codecs.Mqtt.Packets;
+
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt.Persistence;
+
     using Newtonsoft.Json;
 
     public class SessionState : ISessionState
@@ -37,9 +40,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
         [JsonProperty(PropertyName = "shouldSaveToStore")]
         public bool ShouldSaveToStore { get; }
 
-        [JsonProperty(PropertyName = "subscriptions")]
-        public IReadOnlyList<ISubscription> Subscriptions => this.subscriptions;
-
         [JsonProperty(PropertyName = "subscriptionRegistrations")]
         public IReadOnlyDictionary<string, bool> SubscriptionRegistrations
         {
@@ -56,6 +56,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                 }
             }
         }
+
+        [JsonProperty(PropertyName = "subscriptions")]
+        public IReadOnlyList<ISubscription> Subscriptions => this.subscriptions;
 
         // TODO: Check if this needs to be a deep copy.
         public ISessionState Copy()
@@ -75,8 +78,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             }
         }
 
-        internal void ClearRegistrations() => this.subscriptionRegistrations.Clear();
-
         public bool RemoveSubscription(string topicFilter)
         {
             this.updateLock.EnterWriteLock();
@@ -89,6 +90,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                     this.subscriptions.RemoveAt(index);
                     return true;
                 }
+
                 return false;
             }
             finally
@@ -120,6 +122,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             }
         }
 
+        internal void ClearRegistrations() => this.subscriptionRegistrations.Clear();
+
         int FindSubscriptionIndex(string topicFilter)
         {
             for (int i = this.subscriptions.Count - 1; i >= 0; i--)
@@ -130,6 +134,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                     return i;
                 }
             }
+
             return -1;
         }
     }

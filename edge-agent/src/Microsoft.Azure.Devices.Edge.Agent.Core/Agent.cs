@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Serde;
     using Microsoft.Azure.Devices.Edge.Storage;
@@ -30,10 +31,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
         readonly IEncryptionProvider encryptionProvider;
         DeploymentConfigInfo currentConfig;
 
-        public Agent(IConfigSource configSource, IEnvironmentProvider environmentProvider,
-            IPlanner planner, IPlanRunner planRunner, IReporter reporter,
+        public Agent(
+            IConfigSource configSource,
+            IEnvironmentProvider environmentProvider,
+            IPlanner planner,
+            IPlanRunner planRunner,
+            IReporter reporter,
             IModuleIdentityLifecycleManager moduleIdentityLifecycleManager,
-            IEntityStore<string, string> configStore, DeploymentConfigInfo initialDeployedConfigInfo,
+            IEntityStore<string, string> configStore,
+            DeploymentConfigInfo initialDeployedConfigInfo,
             ISerde<DeploymentConfigInfo> deploymentConfigInfoSerde,
             IEncryptionProvider encryptionProvider)
         {
@@ -51,9 +57,16 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             Events.AgentCreated();
         }
 
-        public static async Task<Agent> Create(IConfigSource configSource, IPlanner planner, IPlanRunner planRunner, IReporter reporter,
-            IModuleIdentityLifecycleManager moduleIdentityLifecycleManager, IEnvironmentProvider environmentProvider,
-            IEntityStore<string, string> configStore, ISerde<DeploymentConfigInfo> deploymentConfigInfoSerde, IEncryptionProvider encryptionProvider)
+        public static async Task<Agent> Create(
+            IConfigSource configSource,
+            IPlanner planner,
+            IPlanRunner planRunner,
+            IReporter reporter,
+            IModuleIdentityLifecycleManager moduleIdentityLifecycleManager,
+            IEnvironmentProvider environmentProvider,
+            IEntityStore<string, string> configStore,
+            ISerde<DeploymentConfigInfo> deploymentConfigInfoSerde,
+            IEncryptionProvider encryptionProvider)
         {
             Preconditions.CheckNotNull(deploymentConfigInfoSerde, nameof(deploymentConfigInfoSerde));
             Preconditions.CheckNotNull(configStore, nameof(configStore));
@@ -62,85 +75,30 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             try
             {
                 Option<string> deploymentConfigInfoJson = await Preconditions.CheckNotNull(configStore, nameof(configStore)).Get(StoreConfigKey);
-                await deploymentConfigInfoJson.ForEachAsync(async json =>
-                {
-                    string decryptedJson = await encryptionProvider.DecryptAsync(json);
-                    deploymentConfigInfo = Option.Some(deploymentConfigInfoSerde.Deserialize(decryptedJson));
-                });
+                await deploymentConfigInfoJson.ForEachAsync(
+                    async json =>
+                    {
+                        string decryptedJson = await encryptionProvider.DecryptAsync(json);
+                        deploymentConfigInfo = Option.Some(deploymentConfigInfoSerde.Deserialize(decryptedJson));
+                    });
             }
             catch (Exception ex) when (!ex.IsFatal())
             {
                 Events.ErrorDeserializingConfig(ex);
             }
-            var agent = new Agent(configSource, environmentProvider, planner, planRunner, reporter, moduleIdentityLifecycleManager,
-                configStore, deploymentConfigInfo.GetOrElse(DeploymentConfigInfo.Empty), deploymentConfigInfoSerde, encryptionProvider);
+
+            var agent = new Agent(
+                configSource,
+                environmentProvider,
+                planner,
+                planRunner,
+                reporter,
+                moduleIdentityLifecycleManager,
+                configStore,
+                deploymentConfigInfo.GetOrElse(DeploymentConfigInfo.Empty),
+                deploymentConfigInfoSerde,
+                encryptionProvider);
             return agent;
-        }
-
-        async Task<(ModuleSet current, Exception ex)> GetCurrentModuleSetAsync(CancellationToken token)
-        {
-            ModuleSet current = null;
-            Exception ex = null;
-
-            try
-            {
-                current = await this.environment.GetModulesAsync(token);
-            }
-            catch (Exception e) when (!e.IsFatal())
-            {
-                ex = e;
-            }
-
-            return (current, ex);
-        }
-
-        async Task<(DeploymentConfigInfo deploymentConfigInfo, Exception ex)> GetDeploymentConfigInfoAsync()
-        {
-            DeploymentConfigInfo deploymentConfigInfo = null;
-            Exception ex = null;
-
-            try
-            {
-                Events.GettingDeploymentConfigInfo();
-                deploymentConfigInfo = await this.configSource.GetDeploymentConfigInfoAsync();
-                Events.ObtainedDeploymentConfigInfo(deploymentConfigInfo);
-            }
-            catch (Exception e) when (!e.IsFatal())
-            {
-                ex = e;
-            }
-
-            return (deploymentConfigInfo, ex);
-        }
-
-        async Task<(ModuleSet current, DeploymentConfigInfo DeploymentConfigInfo, Exception ex)> GetReconcileData(CancellationToken token)
-        {
-            // we read the data from the config source and from the environment separately because
-            // when doing something like TaskEx.WhenAll(t1, t2) if either of them throws then we get
-            // nothing; so for example, if the environment is able to successfully retrieve the moduleset
-            // but there's a corrupt deployment in IoT Hub then we end up not being able to report the
-            // current state even though we have it
-
-            ((ModuleSet current, Exception environmentException), (DeploymentConfigInfo deploymentConfigInfo, Exception configSourceException)) = await TaskEx.WhenAll(
-                this.GetCurrentModuleSetAsync(token), this.GetDeploymentConfigInfoAsync()
-            );
-
-            List<Exception> exceptions = new[]
-            {
-                environmentException,
-                configSourceException,
-                deploymentConfigInfo?.Exception.OrDefault()
-            }
-            .Where(e => e != null)
-            .ToList();
-
-            Exception exception = null;
-            if (exceptions.Any())
-            {
-                exception = exceptions.Count > 1 ? new AggregateException(exceptions) : exceptions[0];
-            }
-
-            return (current, deploymentConfigInfo, exception);
         }
 
         public async Task ReconcileAsync(CancellationToken token)
@@ -217,18 +175,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
                             break;
                     }
                 }
+
                 await this.reporter.ReportAsync(token, moduleSetToReport, await this.environment.GetRuntimeInfoAsync(), this.currentConfig.Version, status);
             }
-        }
-
-        // This should be called only within the reconcile lock.
-        async Task UpdateCurrentConfig(DeploymentConfigInfo deploymentConfigInfo)
-        {
-            this.environment = this.environmentProvider.Create(deploymentConfigInfo.DeploymentConfig);
-            this.currentConfig = deploymentConfigInfo;
-
-            string encryptedConfig = await this.encryptionProvider.EncryptAsync(this.deploymentConfigInfoSerde.Serialize(deploymentConfigInfo));
-            await this.configStore.Put(StoreConfigKey, encryptedConfig);
         }
 
         public async Task HandleShutdown(CancellationToken token)
@@ -246,6 +195,97 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             {
                 Events.HandleShutdownFailed(ex);
             }
+        }
+
+        internal async Task ReportShutdownAsync(CancellationToken token)
+        {
+            try
+            {
+                var status = new DeploymentStatus(DeploymentStatusCode.Unknown, "Agent is not running");
+                await this.reporter.ReportShutdown(status, token);
+                Events.ReportShutdown();
+            }
+            catch (Exception ex) when (!ex.IsFatal())
+            {
+                Events.ReportShutdownFailed(ex);
+            }
+        }
+
+        async Task<(ModuleSet current, Exception ex)> GetCurrentModuleSetAsync(CancellationToken token)
+        {
+            ModuleSet current = null;
+            Exception ex = null;
+
+            try
+            {
+                current = await this.environment.GetModulesAsync(token);
+            }
+            catch (Exception e) when (!e.IsFatal())
+            {
+                ex = e;
+            }
+
+            return (current, ex);
+        }
+
+        async Task<(DeploymentConfigInfo deploymentConfigInfo, Exception ex)> GetDeploymentConfigInfoAsync()
+        {
+            DeploymentConfigInfo deploymentConfigInfo = null;
+            Exception ex = null;
+
+            try
+            {
+                Events.GettingDeploymentConfigInfo();
+                deploymentConfigInfo = await this.configSource.GetDeploymentConfigInfoAsync();
+                Events.ObtainedDeploymentConfigInfo(deploymentConfigInfo);
+            }
+            catch (Exception e) when (!e.IsFatal())
+            {
+                ex = e;
+            }
+
+            return (deploymentConfigInfo, ex);
+        }
+
+        async Task<(ModuleSet current, DeploymentConfigInfo DeploymentConfigInfo, Exception ex)> GetReconcileData(CancellationToken token)
+        {
+            // we read the data from the config source and from the environment separately because
+            // when doing something like TaskEx.WhenAll(t1, t2) if either of them throws then we get
+            // nothing; so for example, if the environment is able to successfully retrieve the moduleset
+            // but there's a corrupt deployment in IoT Hub then we end up not being able to report the
+            // current state even though we have it
+
+            ((ModuleSet current, Exception environmentException), (DeploymentConfigInfo deploymentConfigInfo, Exception configSourceException)) = await TaskEx.WhenAll(
+                this.GetCurrentModuleSetAsync(token),
+                this.GetDeploymentConfigInfoAsync()
+            );
+
+            List<Exception> exceptions = new[]
+                {
+                    environmentException,
+                    configSourceException,
+                    deploymentConfigInfo?.Exception.OrDefault()
+                }
+                .Where(e => e != null)
+                .ToList();
+
+            Exception exception = null;
+            if (exceptions.Any())
+            {
+                exception = exceptions.Count > 1 ? new AggregateException(exceptions) : exceptions[0];
+            }
+
+            return (current, deploymentConfigInfo, exception);
+        }
+
+        // This should be called only within the reconcile lock.
+        async Task UpdateCurrentConfig(DeploymentConfigInfo deploymentConfigInfo)
+        {
+            this.environment = this.environmentProvider.Create(deploymentConfigInfo.DeploymentConfig);
+            this.currentConfig = deploymentConfigInfo;
+
+            string encryptedConfig = await this.encryptionProvider.EncryptAsync(this.deploymentConfigInfoSerde.Serialize(deploymentConfigInfo));
+            await this.configStore.Put(StoreConfigKey, encryptedConfig);
         }
 
         async Task ShutdownModules(CancellationToken token)
@@ -266,20 +306,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             catch (Exception ex) when (!ex.IsFatal())
             {
                 Events.ShutdownModulesFailed(ex);
-            }
-        }
-
-        internal async Task ReportShutdownAsync(CancellationToken token)
-        {
-            try
-            {
-                var status = new DeploymentStatus(DeploymentStatusCode.Unknown, "Agent is not running");
-                await this.reporter.ReportShutdown(status, token);
-                Events.ReportShutdown();
-            }
-            catch (Exception ex) when (!ex.IsFatal())
-            {
-                Events.ReportShutdownFailed(ex);
             }
         }
 
@@ -366,11 +392,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
                 }
             }
 
-            internal static void ErrorDeserializingConfig(Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorDeserializingConfig, ex, "There was an error deserializing stored deployment configuration information");
-            }
-
             public static void InitiateShutdown()
             {
                 Log.LogInformation((int)EventIds.InitiateShutdown, "Initiating shutdown cleanup.");
@@ -394,6 +415,11 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             public static void ShutdownModulesFailed(Exception ex)
             {
                 Log.LogWarning((int)EventIds.StopModulesFailed, ex, "Error while stopping all modules.");
+            }
+
+            internal static void ErrorDeserializingConfig(Exception ex)
+            {
+                Log.LogWarning((int)EventIds.ErrorDeserializingConfig, ex, "There was an error deserializing stored deployment configuration information");
             }
         }
     }

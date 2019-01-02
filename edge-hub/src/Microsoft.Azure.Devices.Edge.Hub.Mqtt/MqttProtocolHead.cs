@@ -10,12 +10,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
     using System.Security.Cryptography.X509Certificates;
     using System.Threading;
     using System.Threading.Tasks;
+
     using DotNetty.Buffers;
     using DotNetty.Codecs.Mqtt;
     using DotNetty.Handlers.Tls;
     using DotNetty.Transport.Bootstrapping;
     using DotNetty.Transport.Channels;
     using DotNetty.Transport.Channels.Sockets;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
@@ -195,10 +197,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             if (this.clientCertAuthAllowed && certificate != null)
             {
                 IList<X509Certificate2> certChain = chain?.ChainElements?
-                        .Cast<X509ChainElement>()
-                        .Select(element => element.Certificate)
-                        .ToList()
-                    ?? new List<X509Certificate2>();
+                                                        .Cast<X509ChainElement>()
+                                                        .Select(element => element.Certificate)
+                                                        .ToList()
+                                                    ?? new List<X509Certificate2>();
                 identityProvider.RegisterConnectionCertificate(new X509Certificate2(certificate), certChain);
             }
 

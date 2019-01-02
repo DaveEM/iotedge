@@ -3,8 +3,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
     using System;
     using System.Collections.Generic;
+
     using DotNetty.Buffers;
     using DotNetty.Common.Utilities;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Azure.Devices.ProtocolGateway.Messaging;
@@ -33,36 +35,17 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 
         public string Address { get; }
 
-        public IByteBuffer Payload { get; }
-
-        public string Id { get; }
-
-        public IDictionary<string, string> Properties { get; }
-
         public DateTime CreatedTimeUtc { get; }
 
         public uint DeliveryCount { get; }
 
+        public string Id { get; }
+
+        public IByteBuffer Payload { get; }
+
+        public IDictionary<string, string> Properties { get; }
+
         public ulong SequenceNumber { get; }
-
-        #region IDisposable Support
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!this.isDisposed.GetAndSet(true))
-            {
-                if (disposing)
-                {
-                    this.Payload?.SafeRelease();
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-        }
-        #endregion
 
         public class Builder
         {
@@ -122,5 +105,25 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                 return new ProtocolGatewayMessage(this.payload, this.address, this.properties, this.id, this.createdTimeUtc, this.deliveryCount, this.sequenceNumber);
             }
         }
+
+        #region IDisposable Support
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!this.isDisposed.GetAndSet(true))
+            {
+                if (disposing)
+                {
+                    this.Payload?.SafeRelease();
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+        }
+
+        #endregion
     }
 }

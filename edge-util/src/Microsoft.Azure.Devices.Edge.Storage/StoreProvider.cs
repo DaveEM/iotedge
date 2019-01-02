@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class StoreProvider : IStoreProvider
@@ -56,6 +57,8 @@ namespace Microsoft.Azure.Devices.Edge.Storage
             return Task.CompletedTask;
         }
 
+        public void Dispose() => this.Dispose(true);
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -63,7 +66,5 @@ namespace Microsoft.Azure.Devices.Edge.Storage
                 this.dbStoreProvider?.Dispose();
             }
         }
-
-        public void Dispose() => this.Dispose(true);
     }
 }

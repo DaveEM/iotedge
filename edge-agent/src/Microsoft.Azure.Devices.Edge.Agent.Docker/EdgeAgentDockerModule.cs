@@ -2,8 +2,10 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Docker
 {
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class EdgeAgentDockerModule : DockerModule, IEdgeAgentModule
@@ -22,8 +24,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
             if (ReferenceEquals(this, other))
                 return true;
             return string.Equals(this.Name, other.Name) &&
-                string.Equals(this.Type, other.Type) &&
-                string.Equals(this.Config.Image, other.Config.Image);
+                   string.Equals(this.Type, other.Type) &&
+                   string.Equals(this.Config.Image, other.Config.Image);
         }
 
         public override int GetHashCode()

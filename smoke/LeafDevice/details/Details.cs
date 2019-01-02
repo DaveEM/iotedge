@@ -9,7 +9,9 @@ namespace LeafDevice.Details
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::LeafDevice.details;
+
     using Microsoft.Azure.Devices;
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Transport.Mqtt;
@@ -17,6 +19,7 @@ namespace LeafDevice.Details
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Shared;
     using Microsoft.Azure.EventHubs;
+
     using DeviceClientTransportType = Microsoft.Azure.Devices.Client.TransportType;
     using EventHubClientTransportType = Microsoft.Azure.EventHubs.TransportType;
     using IotHubConnectionStringBuilder = Microsoft.Azure.Devices.IotHubConnectionStringBuilder;
@@ -90,8 +93,6 @@ namespace LeafDevice.Details
             return Task.CompletedTask;
         }
 
-        X509Certificate2 GetCertificate() => new X509Certificate2(X509Certificate.CreateFromCertFile(this.certificateFileName));
-
         protected async Task ConnectToEdgeAndSendData()
         {
             IotHubConnectionStringBuilder builder = IotHubConnectionStringBuilder.Create(this.iothubConnectionString);
@@ -136,30 +137,6 @@ namespace LeafDevice.Details
             }
         }
 
-        async Task CreateDeviceIdentity(RegistryManager rm)
-        {
-            var device = new Device(this.deviceId)
-            {
-                Authentication = new AuthenticationMechanism() { Type = AuthenticationType.Sas },
-                Capabilities = new DeviceCapabilities() { IotEdge = false }
-            };
-
-            IotHubConnectionStringBuilder builder = IotHubConnectionStringBuilder.Create(this.iothubConnectionString);
-            Console.WriteLine($"Registering device '{device.Id}' on IoT hub '{builder.HostName}'");
-
-            device = await rm.AddDeviceAsync(device);
-
-            this.context = new DeviceContext
-            {
-                Device = device,
-                DeviceClientInstance = Option.None<DeviceClient>(),
-                IotHubConnectionString = this.iothubConnectionString,
-                RegistryManager = rm,
-                RemoveDevice = true,
-                MessageGuid = Guid.NewGuid().ToString()
-            };
-        }
-
         protected async Task VerifyDataOnIoTHub()
         {
             var builder = new EventHubsConnectionStringBuilder(this.eventhubCompatibleEndpointWithEntityPath);
@@ -189,7 +166,7 @@ namespace LeafDevice.Details
                                 eventData.SystemProperties.TryGetValue("iothub-connection-device-id", out object devId);
 
                                 if (devId != null && devId.ToString().Equals(this.context.Device.Id)
-                                    && Encoding.UTF8.GetString(eventData.Body).Contains(this.context.MessageGuid))
+                                                  && Encoding.UTF8.GetString(eventData.Body).Contains(this.context.MessageGuid))
                                 {
                                     result.TrySetResult(true);
                                     return true;
@@ -204,12 +181,6 @@ namespace LeafDevice.Details
 
             await eventHubReceiver.CloseAsync();
             await eventHubClient.CloseAsync();
-        }
-
-        static Task<MethodResponse> DirectMethod(MethodRequest methodRequest, object userContext)
-        {
-            Console.WriteLine($"Leaf device received direct method call...Payload Received: {methodRequest.DataAsJson}");
-            return Task.FromResult(new MethodResponse(methodRequest.Data, (int)HttpStatusCode.OK));
         }
 
         protected async Task VerifyDirectMethod()
@@ -263,6 +234,38 @@ namespace LeafDevice.Details
 
             return Task.CompletedTask;
         }
+
+        static Task<MethodResponse> DirectMethod(MethodRequest methodRequest, object userContext)
+        {
+            Console.WriteLine($"Leaf device received direct method call...Payload Received: {methodRequest.DataAsJson}");
+            return Task.FromResult(new MethodResponse(methodRequest.Data, (int)HttpStatusCode.OK));
+        }
+
+        X509Certificate2 GetCertificate() => new X509Certificate2(X509Certificate.CreateFromCertFile(this.certificateFileName));
+
+        async Task CreateDeviceIdentity(RegistryManager rm)
+        {
+            var device = new Device(this.deviceId)
+            {
+                Authentication = new AuthenticationMechanism() { Type = AuthenticationType.Sas },
+                Capabilities = new DeviceCapabilities() { IotEdge = false }
+            };
+
+            IotHubConnectionStringBuilder builder = IotHubConnectionStringBuilder.Create(this.iothubConnectionString);
+            Console.WriteLine($"Registering device '{device.Id}' on IoT hub '{builder.HostName}'");
+
+            device = await rm.AddDeviceAsync(device);
+
+            this.context = new DeviceContext
+            {
+                Device = device,
+                DeviceClientInstance = Option.None<DeviceClient>(),
+                IotHubConnectionString = this.iothubConnectionString,
+                RegistryManager = rm,
+                RemoveDevice = true,
+                MessageGuid = Guid.NewGuid().ToString()
+            };
+        }
     }
 
     public class DeviceContext
@@ -273,10 +276,10 @@ namespace LeafDevice.Details
 
         public string IotHubConnectionString { get; set; }
 
+        public string MessageGuid { get; set; } //used to identify exactly which message got sent.
+
         public RegistryManager RegistryManager { get; set; }
 
         public bool RemoveDevice { get; set; }
-
-        public string MessageGuid { get; set; } //used to identify exactly which message got sent.
     }
 }

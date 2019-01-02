@@ -6,14 +6,16 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Autofac;
+
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Service.Modules;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Configuration;
     using Microsoft.Extensions.Logging;
-    using ILogger = Extensions.Logging.ILogger;
 
     public class Program
     {
@@ -53,6 +55,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service
             {
                 logger.LogInformation($"Version - {versionInfo.ToString(true)}");
             }
+
             LogLogo(logger);
 
             string mode;
@@ -154,7 +157,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service
                 Option<Agent> agentOption = Option.None<Agent>();
 
                 try
-                {                    
+                {
                     Agent agent = await container.Resolve<Task<Agent>>();
                     agentOption = Option.Some(agent);
                     while (!cts.Token.IsCancellationRequested)
@@ -167,8 +170,10 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service
                         {
                             logger.LogWarning(AgentEventIds.Agent, ex, "Agent reconcile concluded with errors.");
                         }
+
                         await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
                     }
+
                     logger.LogInformation("Closing module management agent.");
 
                     returnCode = 0;
@@ -188,6 +193,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service
                 await Cleanup(agentOption, logger);
                 completed.Set();
             }
+
             handler.ForEach(h => GC.KeepAlive(h));
             return returnCode;
         }
@@ -234,7 +240,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service
 
         static void LogLogo(ILogger logger)
         {
-            logger.LogInformation(@"
+            logger.LogInformation(
+                @"
         █████╗ ███████╗██╗   ██╗██████╗ ███████╗
        ██╔══██╗╚══███╔╝██║   ██║██╔══██╗██╔════╝
        ███████║  ███╔╝ ██║   ██║██████╔╝█████╗

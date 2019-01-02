@@ -12,11 +12,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http
             this.Payload = payload;
         }
 
-        [JsonProperty("status")]
-        public int Status { get; }
-
         [JsonProperty("payload")]
         public JRaw Payload { get; }
+
+        [JsonProperty("status")]
+        public int Status { get; }
     }
 
     public class MethodErrorResult : MethodResult
@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http
             this.ExceptionMessage = exceptionMessage;
         }
 
-        public string Message { get; }
-
         public string ExceptionMessage { get; }
+
+        public string Message { get; }
     }
 }

@@ -7,12 +7,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Middleware
     using System.Net.WebSockets;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
-    using AspNetCore.Http;
+
     using Microsoft.AspNetCore.Builder;
+    using Microsoft.AspNetCore.Http;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Http.Extensions;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
 
     class WebSocketHandlingMiddleware
@@ -68,6 +70,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Middleware
             {
                 localEndPoint = Option.Some<EndPoint>(new IPEndPoint(context.Connection.LocalIpAddress, context.Connection.LocalPort));
             }
+
             var remoteEndPoint = new IPEndPoint(context.Connection.RemoteIpAddress, context.Connection.RemotePort);
 
             X509Certificate2 cert = await context.Connection.GetClientCertificateAsync();
@@ -79,7 +82,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Middleware
             else
             {
                 await listener.ProcessWebSocketRequestAsync(webSocket, localEndPoint, remoteEndPoint, correlationId);
-            }           
+            }
 
             Events.WebSocketRequestCompleted(context.TraceIdentifier, correlationId);
         }

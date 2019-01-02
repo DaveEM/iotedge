@@ -8,6 +8,7 @@ namespace DirectMethodSender
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Transport.Mqtt;
     using Microsoft.Azure.Devices.Edge.Util;
@@ -63,6 +64,7 @@ namespace DirectMethodSender
                         return new ITransportSettings[] { new AmqpTransportSettings(transportType) };
                 }
             }
+
             ITransportSettings[] settings = GetTransportSettings();
 
             ModuleClient moduleClient = await ModuleClient.CreateFromEnvironmentAsync(settings).ConfigureAwait(false);
@@ -86,7 +88,7 @@ namespace DirectMethodSender
             ModuleClient moduleClient,
             TimeSpan dmDelay,
             string targetDeviceId,
-            string targetModuleId, 
+            string targetModuleId,
             CancellationTokenSource cts)
         {
             while (!cts.Token.IsCancellationRequested)
@@ -110,7 +112,6 @@ namespace DirectMethodSender
                 {
                     Console.WriteLine(e);
                 }
-                
 
                 await Task.Delay(dmDelay, cts.Token).ConfigureAwait(false);
             }

@@ -13,10 +13,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
             this.Content = content;
         }
 
-        public HttpStatusCode StatusCode { get; }
-
         public string Content { get; }
 
         public override string Message => $"Message: {base.Message}, HttpStatusCode: {this.StatusCode}, Content: {this.Content}";
+
+        public HttpStatusCode StatusCode { get; }
     }
 }

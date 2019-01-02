@@ -2,7 +2,9 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class DeploymentConfigInfo : IEquatable<DeploymentConfigInfo>
@@ -24,14 +26,18 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             this.DeploymentConfig = DeploymentConfig.Empty;
         }
 
-        [JsonProperty("version")]
-        public long Version { get; }
-
         [JsonProperty("deploymentConfig")]
         public DeploymentConfig DeploymentConfig { get; }
 
         [JsonIgnore]
         public Option<Exception> Exception { get; }
+
+        [JsonProperty("version")]
+        public long Version { get; }
+
+        public static bool operator ==(DeploymentConfigInfo left, DeploymentConfigInfo right) => Equals(left, right);
+
+        public static bool operator !=(DeploymentConfigInfo left, DeploymentConfigInfo right) => !Equals(left, right);
 
         public bool Equals(DeploymentConfigInfo other)
         {
@@ -46,7 +52,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             }
 
             return this.Version == other.Version && Equals(this.DeploymentConfig, other.DeploymentConfig)
-                && this.Exception.Equals(other.Exception);
+                                                 && this.Exception.Equals(other.Exception);
         }
 
         public override bool Equals(object obj)
@@ -79,9 +85,5 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
                 return hashCode;
             }
         }
-
-        public static bool operator ==(DeploymentConfigInfo left, DeploymentConfigInfo right) => Equals(left, right);
-
-        public static bool operator !=(DeploymentConfigInfo left, DeploymentConfigInfo right) => !Equals(left, right);
     }
 }

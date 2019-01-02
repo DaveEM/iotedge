@@ -1,14 +1,16 @@
 // Copyright (c) Microsoft. All rights reserved.
 namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
+    using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Edge.Util;
+    using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Azure.Devices.ProtocolGateway.Identity;
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt.Persistence;
     using Microsoft.Extensions.Logging;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Edge.Util.Concurrency;
+
     using static System.FormattableString;
 
     public class SessionStateStoragePersistenceProvider : SessionStatePersistenceProvider
@@ -34,7 +36,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             }
         }
 
-        public override Task DeleteAsync(IDeviceIdentity identity, ISessionState sessionState) => this.sessionStore.Remove(identity.Id);        
+        public override Task DeleteAsync(IDeviceIdentity identity, ISessionState sessionState) => this.sessionStore.Remove(identity.Id);
 
         Task PersistToStore(string id, ISessionState sessionState)
         {
@@ -46,7 +48,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             return registrationSessionState.ShouldSaveToStore
                 ? this.sessionStore.Put(id, registrationSessionState)
                 : Task.CompletedTask;
-
         }
 
         static class Events

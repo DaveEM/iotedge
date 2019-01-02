@@ -8,13 +8,16 @@ namespace SimulatedTemperatureSensor
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Transport.Mqtt;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Extensions.Configuration;
+
     using Newtonsoft.Json;
+
     using ExponentialBackoff = Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling.ExponentialBackoff;
 
     class Program
@@ -22,12 +25,18 @@ namespace SimulatedTemperatureSensor
         const int RetryCount = 5;
         const string MessageCountConfigKey = "MessageCount";
         static readonly ITransientErrorDetectionStrategy TimeoutErrorDetectionStrategy = new DelegateErrorDetectionStrategy(ex => ex.HasTimeoutException());
+
         static readonly RetryStrategy TransientRetryStrategy =
             new ExponentialBackoff(RetryCount, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(60), TimeSpan.FromSeconds(4));
+
         static readonly Random Rnd = new Random();
         static readonly AtomicBoolean Reset = new AtomicBoolean(false);
 
-        public enum ControlCommandEnum { Reset = 0, Noop = 1 };
+        public enum ControlCommandEnum
+        {
+            Reset = 0,
+            Noop = 1
+        };
 
         public static int Main() => MainAsync().Result;
 
@@ -55,7 +64,8 @@ namespace SimulatedTemperatureSensor
             };
 
             string messagesToSendString = sendForever ? "unlimited" : messageCount.ToString();
-            Console.WriteLine($"Initializing simulated temperature sensor to send {messagesToSendString} messages, at an interval of {messageDelay.TotalSeconds} seconds.\n"
+            Console.WriteLine(
+                $"Initializing simulated temperature sensor to send {messagesToSendString} messages, at an interval of {messageDelay.TotalSeconds} seconds.\n"
                 + $"To change this, set the environment variable {MessageCountConfigKey} to the number of messages that should be sent (set it to -1 to send unlimited messages).");
 
             TransportType transportType = configuration.GetValue("ClientTransportType", TransportType.Amqp_Tcp_Only);
@@ -98,6 +108,7 @@ namespace SimulatedTemperatureSensor
                         return new ITransportSettings[] { new AmqpTransportSettings(transportType) };
                 }
             }
+
             ITransportSettings[] settings = GetTransportSettings();
 
             ModuleClient moduleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
@@ -195,6 +206,7 @@ namespace SimulatedTemperatureSensor
                     currentTemp = sim.MachineTempMin;
                     Reset.Set(false);
                 }
+
                 if (currentTemp > sim.MachineTempMax)
                 {
                     currentTemp += Rnd.NextDouble() - 0.5; // add value between [-0.5..0.5]
@@ -248,17 +260,17 @@ namespace SimulatedTemperatureSensor
 
         internal class SimulatorParameters
         {
-            public double MachineTempMin { get; set; }
-
-            public double MachineTempMax { get; set; }
-
-            public double MachinePressureMin { get; set; }
-
-            public double MachinePressureMax { get; set; }
-
             public double AmbientTemp { get; set; }
 
             public int HumidityPercent { get; set; }
+
+            public double MachinePressureMax { get; set; }
+
+            public double MachinePressureMin { get; set; }
+
+            public double MachineTempMax { get; set; }
+
+            public double MachineTempMin { get; set; }
         }
     }
 }

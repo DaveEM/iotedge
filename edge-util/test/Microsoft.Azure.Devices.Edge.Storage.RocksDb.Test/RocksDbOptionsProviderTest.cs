@@ -2,10 +2,14 @@
 namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using RocksDbSharp;
+
     using Xunit;
 
     [Unit]
@@ -23,12 +27,12 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
             //arrange
             var env32 = new Mock<ISystemEnvironment>();
             env32.SetupGet(s => s.Is32BitProcess)
-                            .Returns(() => true);
+                .Returns(() => true);
 
             var env64 = new Mock<ISystemEnvironment>();
 
             env64.SetupGet(s => s.Is32BitProcess)
-                            .Returns(() => false);
+                .Returns(() => false);
             var provider32 = new RocksDbOptionsProvider(env32.Object, true);
             var provider64 = new RocksDbOptionsProvider(env64.Object, true);
 
@@ -46,12 +50,12 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
         {
             var env32 = new Mock<ISystemEnvironment>();
             env32.SetupGet(s => s.Is32BitProcess)
-                            .Returns(() => true);
+                .Returns(() => true);
 
             var env64 = new Mock<ISystemEnvironment>();
 
             env64.SetupGet(s => s.Is32BitProcess)
-                            .Returns(() => false);
+                .Returns(() => false);
             var provider32 = new RocksDbOptionsProvider(env32.Object, true);
             var provider64 = new RocksDbOptionsProvider(env64.Object, true);
 

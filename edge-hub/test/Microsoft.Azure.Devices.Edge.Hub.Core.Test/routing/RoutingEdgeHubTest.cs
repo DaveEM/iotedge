@@ -4,7 +4,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
     using System;
     using System.Collections.Generic;
     using System.Net;
+    using System.Text;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Cloud;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
@@ -13,10 +15,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Routing.Core;
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
+
     using Moq;
+
     using Xunit;
-    using IMessage = Microsoft.Azure.Devices.Routing.Core.IMessage;
-    using Message = Microsoft.Azure.Devices.Edge.Hub.Core.EdgeMessage;
+
+    using Constants = Microsoft.Azure.Devices.Edge.Hub.Core.Constants;
+    using IMessage = Microsoft.Azure.Devices.Edge.Hub.Core.IMessage;
+    using Message = EdgeMessage;
+    using SystemProperties = Microsoft.Azure.Devices.Edge.Hub.Core.SystemProperties;
 
     [Unit]
     public class RoutingEdgeHubTest
@@ -45,10 +52,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
 
             // Create mock message converter to generate a message with source matching the route
-            var message = Mock.Of<IMessage>();
+            var message = Mock.Of<Devices.Routing.Core.IMessage>();
             Mock.Get(message).SetupGet(m => m.MessageSource).Returns(() => TelemetryMessageSource.Instance);
-            var messageConverter = Mock.Of<Core.IMessageConverter<IMessage>>();
-            Mock.Get(messageConverter).Setup(mc => mc.FromMessage(It.IsAny<Core.IMessage>())).Returns(message);
+            var messageConverter = Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>();
+            Mock.Get(messageConverter).Setup(mc => mc.FromMessage(It.IsAny<IMessage>())).Returns(message);
 
             // Create mock for IConnectionManager
             var connectionManager = Mock.Of<IConnectionManager>();
@@ -67,11 +74,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
                 Mock.Of<IDeviceConnectivityManager>());
             var identity = new Mock<IIdentity>();
             identity.SetupGet(id => id.Id).Returns("something");
-            EdgeMessage[] messages = { new Message.Builder(new byte[0]).Build() };
+            EdgeMessage[] messages = { new EdgeMessage.Builder(new byte[0]).Build() };
             await routingEdgeHub.ProcessDeviceMessageBatch(identity.Object, messages);
 
             // Verify Expectation
-            Mock.Get(endpointExecutor).Verify(e => e.Invoke(It.IsAny<IMessage>()), Times.Once);
+            Mock.Get(endpointExecutor).Verify(e => e.Invoke(It.IsAny<Devices.Routing.Core.IMessage>()), Times.Once);
         }
 
         [Fact]
@@ -109,7 +116,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
 
             var messageConverter = new RoutingMessageConverter();
 
-            Message badMessage = new Message.Builder(new byte[300 * 1024]).Build();
+            Message badMessage = new EdgeMessage.Builder(new byte[300 * 1024]).Build();
 
             var routingEdgeHub = new RoutingEdgeHub(
                 router,
@@ -122,10 +129,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
 
             await Assert.ThrowsAsync<EdgeHubMessageTooLargeException>(() => routingEdgeHub.ProcessDeviceMessage(identity.Object, badMessage));
 
-            string badString = System.Text.Encoding.UTF8.GetString(new byte[300 * 1024], 0, 300 * 1024);
+            string badString = Encoding.UTF8.GetString(new byte[300 * 1024], 0, 300 * 1024);
             var badProperties = new Dictionary<string, string> { ["toolong"] = badString };
 
-            badMessage = new Message.Builder(new byte[1]).SetProperties(badProperties).Build();
+            badMessage = new EdgeMessage.Builder(new byte[1]).SetProperties(badProperties).Build();
 
             await Assert.ThrowsAsync<EdgeHubMessageTooLargeException>(() => routingEdgeHub.ProcessDeviceMessage(identity.Object, badMessage));
 
@@ -157,14 +164,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             var routerConfig = new RouterConfig(new[] { route });
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
 
-            var messageConverter = Mock.Of<Core.IMessageConverter<IMessage>>();
+            var messageConverter = Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>();
             var connectionManager = Mock.Of<IConnectionManager>();
             var twinManager = new Mock<ITwinManager>();
-            var message = Mock.Of<Core.IMessage>();
+            var message = Mock.Of<IMessage>();
             twinManager.Setup(t => t.GetTwinAsync(It.IsAny<string>())).Returns(Task.FromResult(message));
             var routingEdgeHub = new RoutingEdgeHub(router, messageConverter, connectionManager, twinManager.Object, "testEdgeDevice", Mock.Of<IInvokeMethodHandler>(), Mock.Of<IDeviceConnectivityManager>());
 
-            Core.IMessage received = await routingEdgeHub.GetTwinAsync("*");
+            IMessage received = await routingEdgeHub.GetTwinAsync("*");
             twinManager.Verify(x => x.GetTwinAsync("*"), Times.Once);
 
             Assert.Equal(message, received);
@@ -193,12 +200,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             var routerConfig = new RouterConfig(new[] { route });
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
 
-            var messageConverter = Mock.Of<Core.IMessageConverter<IMessage>>();
+            var messageConverter = Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>();
             var connectionManager = Mock.Of<IConnectionManager>();
             var twinManager = new Mock<ITwinManager>();
-            var message = Mock.Of<Core.IMessage>();
-            Core.IMessage received = new Message.Builder(new byte[0]).Build();
-            twinManager.Setup(t => t.UpdateDesiredPropertiesAsync(It.IsAny<string>(), It.IsAny<Core.IMessage>())).Callback<string, Core.IMessage>((s, m) => received = message).Returns(Task.CompletedTask);
+            var message = Mock.Of<IMessage>();
+            IMessage received = new EdgeMessage.Builder(new byte[0]).Build();
+            twinManager.Setup(t => t.UpdateDesiredPropertiesAsync(It.IsAny<string>(), It.IsAny<IMessage>())).Callback<string, IMessage>((s, m) => received = message).Returns(Task.CompletedTask);
             var routingEdgeHub = new RoutingEdgeHub(router, messageConverter, connectionManager, twinManager.Object, "testEdgeDevice", Mock.Of<IInvokeMethodHandler>(), Mock.Of<IDeviceConnectivityManager>());
 
             await routingEdgeHub.UpdateDesiredPropertiesAsync("*", message);
@@ -231,7 +238,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
 
             // Create mock message converter to generate a message with source matching the route
-            var messageConverter = Mock.Of<Core.IMessageConverter<IMessage>>();
+            var messageConverter = Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>();
 
             // Mock of twin manager
             var twinManager = Mock.Of<ITwinManager>();
@@ -267,9 +274,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             Assert.False(responseTask.IsCompleted);
 
             // Arrange
-            Message message = new Message.Builder(new byte[0]).Build();
-            message.Properties[Core.SystemProperties.CorrelationId] = methodRequest.CorrelationId;
-            message.Properties[Core.SystemProperties.StatusCode] = "200";
+            Message message = new EdgeMessage.Builder(new byte[0]).Build();
+            message.Properties[SystemProperties.CorrelationId] = methodRequest.CorrelationId;
+            message.Properties[SystemProperties.StatusCode] = "200";
 
             // Act
             await deviceMessageHandler.ProcessMethodResponseAsync(message);
@@ -304,7 +311,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
 
             // Create mock message converter to generate a message with source matching the route
-            var messageConverter = Mock.Of<Core.IMessageConverter<IMessage>>();
+            var messageConverter = Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>();
             var methodRequest = new DirectMethodRequest("device1/module1", "shutdown", null, TimeSpan.FromSeconds(2), TimeSpan.FromMilliseconds(10));
 
             // Mock of twin manager
@@ -374,7 +381,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
 
             // Create mock message converter to generate a message with source matching the route
-            var messageConverter = Mock.Of<Core.IMessageConverter<IMessage>>();
+            var messageConverter = Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>();
             var methodRequest = new DirectMethodRequest("device1/module1", "shutdown", null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(20));
 
             // Mock of twin manager
@@ -400,9 +407,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             var underlyingDeviceProxy = new Mock<IDeviceProxy>();
 
             // Arrange
-            Message message = new Message.Builder(new byte[0]).Build();
-            message.Properties[Core.SystemProperties.CorrelationId] = methodRequest.CorrelationId;
-            message.Properties[Core.SystemProperties.StatusCode] = "200";
+            Message message = new EdgeMessage.Builder(new byte[0]).Build();
+            message.Properties[SystemProperties.CorrelationId] = methodRequest.CorrelationId;
+            message.Properties[SystemProperties.StatusCode] = "200";
 
             underlyingDeviceProxy.Setup(d => d.InvokeMethodAsync(It.IsAny<DirectMethodRequest>()))
                 .Callback(() => deviceMessageHandler.ProcessMethodResponseAsync(message))
@@ -448,7 +455,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             var routerConfig = new RouterConfig(new[] { route });
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
 
-            var messageConverter = Mock.Of<Core.IMessageConverter<IMessage>>();
+            var messageConverter = Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>();
 
             // Create mock for IConnectionManager
             var connectionManager = Mock.Of<IConnectionManager>();
@@ -460,24 +467,24 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             // Test Scenario
             var routingEdgeHub = new RoutingEdgeHub(router, messageConverter, connectionManager, twinManager, edgeDeviceId, Mock.Of<IInvokeMethodHandler>(), Mock.Of<IDeviceConnectivityManager>());
 
-            Message clientMessage1 = new Message.Builder(new byte[0]).Build();
-            clientMessage1.SystemProperties[Core.SystemProperties.ConnectionDeviceId] = edgeDeviceId;
+            Message clientMessage1 = new EdgeMessage.Builder(new byte[0]).Build();
+            clientMessage1.SystemProperties[SystemProperties.ConnectionDeviceId] = edgeDeviceId;
             routingEdgeHub.AddEdgeSystemProperties(clientMessage1);
-            Assert.True(clientMessage1.SystemProperties.ContainsKey(Core.SystemProperties.EdgeHubOriginInterface));
-            Assert.True(clientMessage1.SystemProperties.ContainsKey(Core.SystemProperties.EdgeMessageId));
-            Assert.Equal(Core.Constants.InternalOriginInterface, clientMessage1.SystemProperties[Core.SystemProperties.EdgeHubOriginInterface]);
+            Assert.True(clientMessage1.SystemProperties.ContainsKey(SystemProperties.EdgeHubOriginInterface));
+            Assert.True(clientMessage1.SystemProperties.ContainsKey(SystemProperties.EdgeMessageId));
+            Assert.Equal(Constants.InternalOriginInterface, clientMessage1.SystemProperties[SystemProperties.EdgeHubOriginInterface]);
 
-            Message clientMessage2 = new Message.Builder(new byte[0]).Build();
-            clientMessage2.SystemProperties[Core.SystemProperties.ConnectionDeviceId] = "downstreamDevice";
+            Message clientMessage2 = new EdgeMessage.Builder(new byte[0]).Build();
+            clientMessage2.SystemProperties[SystemProperties.ConnectionDeviceId] = "downstreamDevice";
             routingEdgeHub.AddEdgeSystemProperties(clientMessage2);
-            Assert.True(clientMessage2.SystemProperties.ContainsKey(Core.SystemProperties.EdgeHubOriginInterface));
-            Assert.True(clientMessage2.SystemProperties.ContainsKey(Core.SystemProperties.EdgeMessageId));
-            Assert.Equal(Core.Constants.DownstreamOriginInterface, clientMessage2.SystemProperties[Core.SystemProperties.EdgeHubOriginInterface]);
+            Assert.True(clientMessage2.SystemProperties.ContainsKey(SystemProperties.EdgeHubOriginInterface));
+            Assert.True(clientMessage2.SystemProperties.ContainsKey(SystemProperties.EdgeMessageId));
+            Assert.Equal(Constants.DownstreamOriginInterface, clientMessage2.SystemProperties[SystemProperties.EdgeHubOriginInterface]);
 
-            Message clientMessage3 = new Message.Builder(new byte[0]).Build();
+            Message clientMessage3 = new EdgeMessage.Builder(new byte[0]).Build();
             routingEdgeHub.AddEdgeSystemProperties(clientMessage3);
-            Assert.False(clientMessage3.SystemProperties.ContainsKey(Core.SystemProperties.EdgeHubOriginInterface));
-            Assert.True(clientMessage3.SystemProperties.ContainsKey(Core.SystemProperties.EdgeMessageId));
+            Assert.False(clientMessage3.SystemProperties.ContainsKey(SystemProperties.EdgeHubOriginInterface));
+            Assert.True(clientMessage3.SystemProperties.ContainsKey(SystemProperties.EdgeMessageId));
         }
 
         [Fact]
@@ -727,7 +734,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
                 deviceIdentity,
                 moduleIdentity
             };
-            
+
             IReadOnlyDictionary<DeviceSubscription, bool> device1Subscriptions = new Dictionary<DeviceSubscription, bool>()
             {
                 [DeviceSubscription.Methods] = true,
@@ -740,21 +747,24 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
                 [DeviceSubscription.ModuleMessages] = true
             };
 
-            var device1CloudProxy = Mock.Of<ICloudProxy>(dc => dc.SetupDesiredPropertyUpdatesAsync() == Task.CompletedTask
-                && dc.SetupCallMethodAsync() == Task.CompletedTask);
+            var device1CloudProxy = Mock.Of<ICloudProxy>(
+                dc => dc.SetupDesiredPropertyUpdatesAsync() == Task.CompletedTask
+                      && dc.SetupCallMethodAsync() == Task.CompletedTask);
             Mock.Get(device1CloudProxy).SetupGet(d => d.IsActive).Returns(true);
             var module1CloudProxy = Mock.Of<ICloudProxy>(mc => mc.SetupCallMethodAsync() == Task.CompletedTask && mc.IsActive);
 
-            var invokeMethodHandler = Mock.Of<IInvokeMethodHandler>(m =>
-                m.ProcessInvokeMethodSubscription(d1) == Task.CompletedTask
-                && m.ProcessInvokeMethodSubscription(m1) == Task.CompletedTask);
+            var invokeMethodHandler = Mock.Of<IInvokeMethodHandler>(
+                m =>
+                    m.ProcessInvokeMethodSubscription(d1) == Task.CompletedTask
+                    && m.ProcessInvokeMethodSubscription(m1) == Task.CompletedTask);
 
-            var connectionManager = Mock.Of<IConnectionManager>(c =>
-                c.GetConnectedClients() == connectedClients
-                && c.GetSubscriptions(d1) == Option.Some(device1Subscriptions)
-                && c.GetSubscriptions(m1) == Option.Some(module1Subscriptions)
-                && c.GetCloudConnection(d1) == Task.FromResult(Option.Some(device1CloudProxy))
-                && c.GetCloudConnection(m1) == Task.FromResult(Option.Some(module1CloudProxy)));
+            var connectionManager = Mock.Of<IConnectionManager>(
+                c =>
+                    c.GetConnectedClients() == connectedClients
+                    && c.GetSubscriptions(d1) == Option.Some(device1Subscriptions)
+                    && c.GetSubscriptions(m1) == Option.Some(module1Subscriptions)
+                    && c.GetCloudConnection(d1) == Task.FromResult(Option.Some(device1CloudProxy))
+                    && c.GetCloudConnection(m1) == Task.FromResult(Option.Some(module1CloudProxy)));
 
             var endpoint = new Mock<Endpoint>("myId");
             var endpointExecutor = Mock.Of<IEndpointExecutor>();
@@ -770,7 +780,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
 
             var edgeHub = new RoutingEdgeHub(
                 router,
-                Mock.Of<Core.IMessageConverter<IMessage>>(),
+                Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>(),
                 connectionManager,
                 Mock.Of<ITwinManager>(),
                 "ed1",
@@ -807,7 +817,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test.Routing
             Router router = await Router.CreateAsync("myRouter", "myIotHub", routerConfig, endpointExecutorFactory);
             var edgeHub = new RoutingEdgeHub(
                 router,
-                Mock.Of<Core.IMessageConverter<IMessage>>(),
+                Mock.Of<Core.IMessageConverter<Devices.Routing.Core.IMessage>>(),
                 connectionManager,
                 Mock.Of<ITwinManager>(),
                 "ed1",

@@ -3,13 +3,31 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
 {
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
+
     using Xunit;
 
     public class AgentStateTest
     {
+        [Theory]
+        [Unit]
+        [MemberData(nameof(GetValidJsonInputs))]
+        public void DeserializeJsonTest(object input, AgentState expected)
+        {
+            // Arrange
+            string json = JsonConvert.SerializeObject(input);
+
+            // Act
+            var state = JsonConvert.DeserializeObject<AgentState>(json);
+
+            // Assert
+            Assert.Equal(expected, state);
+        }
+
         static IEnumerable<object[]> GetValidJsonInputs()
         {
             (object input, AgentState expected)[] inputs =
@@ -53,21 +71,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
             };
 
             return inputs.Select(r => new[] { r.input, r.expected });
-        }
-
-        [Theory]
-        [Unit]
-        [MemberData(nameof(GetValidJsonInputs))]
-        public void DeserializeJsonTest(object input, AgentState expected)
-        {
-            // Arrange
-            string json = JsonConvert.SerializeObject(input);
-
-            // Act
-            var state = JsonConvert.DeserializeObject<AgentState>(json);
-
-            // Assert
-            Assert.Equal(expected, state);
         }
     }
 }

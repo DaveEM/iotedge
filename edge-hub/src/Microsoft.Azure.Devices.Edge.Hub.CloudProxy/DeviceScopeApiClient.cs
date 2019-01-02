@@ -6,16 +6,19 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
     using System.Net;
     using System.Net.Http;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Common;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Extensions.Logging;
+
     using Newtonsoft.Json;
 
     public class DeviceScopeApiClient : IDeviceScopeApiClient
     {
         const int RetryCount = 2;
         static readonly ITransientErrorDetectionStrategy TransientErrorDetectionStrategy = new ErrorDetectionStrategy();
+
         static readonly RetryStrategy TransientRetryStrategy =
             new ExponentialBackoff(RetryCount, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(4));
 
@@ -77,6 +80,13 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
             return uri;
         }
 
+        static Task<T> ExecuteWithRetry<T>(Func<Task<T>> func, Action<RetryingEventArgs> onRetry, RetryStrategy retryStrategy)
+        {
+            var transientRetryPolicy = new RetryPolicy(TransientErrorDetectionStrategy, retryStrategy);
+            transientRetryPolicy.Retrying += (_, args) => onRetry(args);
+            return transientRetryPolicy.ExecuteAsync(func);
+        }
+
         async Task<ScopeResult> GetIdentitiesInScopeWithRetry(Uri uri)
         {
             try
@@ -114,13 +124,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy
                     throw new DeviceScopeApiException("Error getting device scope result from IoTHub", response.StatusCode, content);
                 }
             }
-        }
-
-        static Task<T> ExecuteWithRetry<T>(Func<Task<T>> func, Action<RetryingEventArgs> onRetry, RetryStrategy retryStrategy)
-        {
-            var transientRetryPolicy = new RetryPolicy(TransientErrorDetectionStrategy, retryStrategy);
-            transientRetryPolicy.Retrying += (_, args) => onRetry(args);
-            return transientRetryPolicy.ExecuteAsync(func);
         }
 
         internal class ErrorDetectionStrategy : ITransientErrorDetectionStrategy

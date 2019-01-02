@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core.Sinks
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Routing.Core.Util;
 

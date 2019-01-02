@@ -5,12 +5,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.ConfigSources
     using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Serde;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Edged.GeneratedCode;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class FileBackupConfigSourceTest : IDisposable

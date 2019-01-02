@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             {
                 return Constants.EdgeAgentModuleIdentityName;
             }
+
             return moduleName;
         }
 
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             {
                 return Constants.EdgeAgentModuleName;
             }
+
             return moduleIdentityName;
         }
     }

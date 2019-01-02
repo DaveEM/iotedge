@@ -1,14 +1,22 @@
 // Copyright (c) Microsoft. All rights reserved.
 namespace Microsoft.Azure.Devices.Edge.Storage.Test
 {
-    using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
+
     using Xunit;
 
     [Unit]
     public class SerDeExtensionsTest
     {
+        public interface ITestInterface
+        {
+            string GetProp1();
+
+            long GetProp2();
+        }
+
         [Fact]
         public void ToJsonTest()
         {
@@ -98,26 +106,21 @@ namespace Microsoft.Azure.Devices.Edge.Storage.Test
             Assert.Equal(testObj.GetProp2(), testObj2.GetProp2());
         }
 
-        public interface ITestInterface
-        {
-            string GetProp1();
-            long GetProp2();
-        }
-
         class TestClass : ITestInterface
         {
-            public string Prop1 { get; }
-            public long Prop2 { get; set; }
-
-            public string GetProp1() => this.Prop1;
-
-            public long GetProp2() => this.Prop2;
-
             [JsonConstructor]
             public TestClass(string prop1)
             {
                 this.Prop1 = prop1;
             }
+
+            public string Prop1 { get; }
+
+            public long Prop2 { get; set; }
+
+            public string GetProp1() => this.Prop1;
+
+            public long GetProp2() => this.Prop2;
         }
     }
 }

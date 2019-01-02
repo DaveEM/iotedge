@@ -6,12 +6,16 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+
     using JetBrains.Annotations;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Transport.Mqtt;
     using Microsoft.Azure.Devices.Edge.Util.Test;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
+
     using Message = Microsoft.Azure.Devices.Message;
 
     [Integration]
@@ -23,7 +27,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
         const string MessagePropertyName = "property1";
         const string DeviceNamePrefix = "E2E_c2d_";
 
-        [Theory, TestPriority(101)]
+        [Theory]
+        [TestPriority(101)]
         [InlineData(TransportType.Mqtt_Tcp_Only)]
         //[InlineData(TransportType.Mqtt_WebSocket_Only)] // Disabled: need a valid server cert for WebSocket to work
         public async void Receive_C2D_SingleMessage_ShouldSucceed(TransportType transportType)
@@ -58,7 +63,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
             }
         }
 
-        [Fact, TestPriority(102)]
+        [Fact]
+        [TestPriority(102)]
         public async void Receive_C2D_OfflineSingleMessage_ShouldSucceed()
         {
             // Arrange
@@ -98,7 +104,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
             }
         }
 
-        [Fact, TestPriority(103)]
+        [Fact]
+        [TestPriority(103)]
         public async void Receive_C2D_SingleMessage_AfterOfflineMessage_ShouldSucceed()
         {
             // Arrange
@@ -145,7 +152,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
             }
         }
 
-        [Fact, TestPriority(104)]
+        [Fact]
+        [TestPriority(104)]
         public async void Receive_C2D_NotSubscribed_OfflineSingleMessage_ShouldThrow()
         {
             // Arrange
@@ -236,6 +244,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.E2E.Test
             {
                 await deviceClient.CloseAsync();
             }
+
             if (serviceClient != null)
             {
                 await serviceClient.CloseAsync();

@@ -5,21 +5,28 @@ namespace LoadGen
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Transport.Mqtt;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
     using Microsoft.Azure.Devices.Shared;
     using Microsoft.Extensions.Logging;
+
     using Newtonsoft.Json;
+
     using Serilog;
+
     using ExponentialBackoff = Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling.ExponentialBackoff;
+    using ILogger = Microsoft.Extensions.Logging.ILogger;
 
     class Program
     {
         const int RetryCount = 5;
+
         static readonly ITransientErrorDetectionStrategy TimeoutErrorDetectionStrategy =
             new DelegateErrorDetectionStrategy(ex => ex.HasTimeoutException());
+
         static readonly RetryStrategy TransientRetryStrategy =
             new ExponentialBackoff(
                 RetryCount,
@@ -31,7 +38,7 @@ namespace LoadGen
 
         static async Task Main()
         {
-            Microsoft.Extensions.Logging.ILogger logger = InitLogger().CreateLogger("loadgen");
+            ILogger logger = InitLogger().CreateLogger("loadgen");
             Log.Information($"Starting load run with the following settings:\r\n{Settings.Current.ToString()}");
 
             try
@@ -121,7 +128,6 @@ namespace LoadGen
                 {
                     Log.Error($"Sequence number {sequenceNumber}, BatchId: {batchId.ToString()} {e}");
                 }
-
             }
         }
 
@@ -159,6 +165,7 @@ namespace LoadGen
                         return new ITransportSettings[] { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) };
                 }
             }
+
             ITransportSettings[] settings = GetTransportSettings();
 
             ModuleClient moduleClient = await ModuleClient.CreateFromEnvironmentAsync(settings).ConfigureAwait(false);

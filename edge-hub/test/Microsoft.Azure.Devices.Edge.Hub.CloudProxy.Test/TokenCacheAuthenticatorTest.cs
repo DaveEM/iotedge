@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client.Exceptions;
     using Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Authenticators;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
@@ -9,7 +10,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class TokenCacheAuthenticatorTest
@@ -56,7 +59,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             var cloudProxy = Mock.Of<ICloudProxy>(c => c.IsActive && c.OpenAsync() == Task.FromResult(true));
             var connectionManager = Mock.Of<IConnectionManager>(
                 c =>
-                    c.CreateCloudConnectionAsync(It.IsAny<IClientCredentials>()) == Task.FromResult(Try.Success(cloudProxy)));            
+                    c.CreateCloudConnectionAsync(It.IsAny<IClientCredentials>()) == Task.FromResult(Try.Success(cloudProxy)));
 
             string iothubHostName = "iothub1.azure.net";
             string callerProductInfo = "productInfo";

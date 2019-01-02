@@ -7,11 +7,14 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Edged
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Edged;
     using Microsoft.Azure.Devices.Edge.Util.Edged.GeneratedCode;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common.WorkloadTestServer;
+
     using Xunit;
+
     using TestCertificateHelper = Microsoft.Azure.Devices.Edge.Util.Test.Common.CertificateHelper;
 
     [Unit]

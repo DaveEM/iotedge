@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
     using System.Linq;
     using System.Net;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Config;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
@@ -16,7 +17,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
     using Microsoft.Azure.Devices.Routing.Core;
     using Microsoft.Azure.Devices.Shared;
     using Microsoft.Extensions.Logging;
+
     using Newtonsoft.Json;
+
     using static System.FormattableString;
 
     /// <summary>
@@ -35,7 +38,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
         readonly AsyncLock edgeHubConfigLock = new AsyncLock();
         readonly IDeviceScopeIdentitiesCache deviceScopeIdentitiesCache;
 
-        internal EdgeHubConnection(IIdentity edgeHubIdentity,
+        internal EdgeHubConnection(
+            IIdentity edgeHubIdentity,
             ITwinManager twinManager,
             RouteFactory routeFactory,
             IMessageConverter<TwinCollection> twinCollectionMessageConverter,
@@ -89,6 +93,99 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             return edgeHubConnection;
         }
 
+        public async Task<Option<EdgeHubConfig>> GetConfig()
+        {
+            using (await this.edgeHubConfigLock.LockAsync())
+            {
+                return await this.GetConfigInternal();
+            }
+        }
+
+        /// <summary>
+        /// If called multiple times, this will currently overwrite the existing callback
+        /// </summary>
+        public void SetConfigUpdatedCallback(Func<EdgeHubConfig, Task> callback) =>
+            this.configUpdateCallback = Preconditions.CheckNotNull(callback, nameof(callback));
+
+        internal static void ValidateSchemaVersion(string schemaVersion)
+        {
+            if (string.IsNullOrWhiteSpace(schemaVersion) || !Version.TryParse(schemaVersion, out Version version))
+            {
+                throw new ArgumentException($"Invalid desired properties schema version {schemaVersion ?? string.Empty}");
+            }
+
+            if (Constants.ConfigSchemaVersion.Major != version.Major)
+            {
+                throw new InvalidOperationException($"Desired properties schema version {schemaVersion} is not compatible with the expected version is {Constants.ConfigSchemaVersion}");
+            }
+
+            if (Constants.ConfigSchemaVersion.Minor != version.Minor)
+            {
+                Events.MismatchedMinorVersions(version, Constants.ConfigSchemaVersion);
+            }
+        }
+
+        internal async void DeviceDisconnected(object sender, IIdentity device)
+        {
+            try
+            {
+                await this.UpdateDeviceConnectionStatus(device, ConnectionStatus.Disconnected);
+            }
+            catch (Exception ex)
+            {
+                Events.ErrorHandlingDeviceDisconnectedEvent(device, ex);
+            }
+        }
+
+        internal async void DeviceConnected(object sender, IIdentity device)
+        {
+            try
+            {
+                await this.UpdateDeviceConnectionStatus(device, ConnectionStatus.Connected);
+            }
+            catch (Exception ex)
+            {
+                Events.ErrorHandlingDeviceConnectedEvent(device, ex);
+            }
+        }
+
+        internal async Task<DirectMethodResponse> HandleMethodInvocation(DirectMethodRequest request)
+        {
+            Preconditions.CheckNotNull(request, nameof(request));
+            Events.MethodRequestReceived(request.Name);
+            if (request.Name.Equals(Constants.ServiceIdentityRefreshMethodName, StringComparison.OrdinalIgnoreCase))
+            {
+                RefreshRequest refreshRequest;
+                try
+                {
+                    refreshRequest = request.Data.FromBytes<RefreshRequest>();
+                }
+                catch (Exception e)
+                {
+                    Events.ErrorParsingMethodRequest(e);
+                    return new DirectMethodResponse(e, HttpStatusCode.BadRequest);
+                }
+
+                try
+                {
+                    Events.RefreshingServiceIdentities(refreshRequest.DeviceIds);
+                    await this.deviceScopeIdentitiesCache.RefreshServiceIdentities(refreshRequest.DeviceIds);
+                    Events.RefreshedServiceIdentities(refreshRequest.DeviceIds);
+                    return new DirectMethodResponse(request.CorrelationId, null, (int)HttpStatusCode.OK);
+                }
+                catch (Exception e)
+                {
+                    Events.ErrorRefreshingServiceIdentities(e);
+                    return new DirectMethodResponse(e, HttpStatusCode.InternalServerError);
+                }
+            }
+            else
+            {
+                Events.InvalidMethodRequest(request.Name);
+                return new DirectMethodResponse(new InvalidOperationException($"Method {request.Name} is not supported"), HttpStatusCode.NotFound);
+            }
+        }
+
         static Task InitEdgeHub(EdgeHubConnection edgeHubConnection, IConnectionManager connectionManager, IIdentity edgeHubIdentity, IEdgeHub edgeHub)
         {
             IDeviceProxy deviceProxy = new EdgeHubDeviceProxy(edgeHubConnection);
@@ -97,14 +194,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             Task methodsSubscriptionTask = edgeHub.AddSubscription(edgeHubIdentity.Id, DeviceSubscription.Methods);
             Task clearDeviceConnectionStatusesTask = edgeHubConnection.ClearDeviceConnectionStatuses();
             return Task.WhenAll(addDeviceConnectionTask, desiredPropertyUpdatesSubscriptionTask, methodsSubscriptionTask, clearDeviceConnectionStatusesTask);
-        }
-
-        public async Task<Option<EdgeHubConfig>> GetConfig()
-        {
-            using (await this.edgeHubConfigLock.LockAsync())
-            {
-                return await this.GetConfigInternal();
-            }
         }
 
         // This method updates local state and should be called only after acquiring edgeHubConfigLock
@@ -167,30 +256,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             return new EdgeHubConfig(desiredProperties.SchemaVersion, routes, desiredProperties.StoreAndForwardConfiguration);
         }
 
-        internal static void ValidateSchemaVersion(string schemaVersion)
-        {
-            if (string.IsNullOrWhiteSpace(schemaVersion) || !Version.TryParse(schemaVersion, out Version version))
-            {
-                throw new ArgumentException($"Invalid desired properties schema version {schemaVersion ?? string.Empty}");
-            }
-
-            if (Constants.ConfigSchemaVersion.Major != version.Major)
-            {
-                throw new InvalidOperationException($"Desired properties schema version {schemaVersion} is not compatible with the expected version is {Constants.ConfigSchemaVersion}");
-            }
-
-            if (Constants.ConfigSchemaVersion.Minor != version.Minor)
-            {
-                Events.MismatchedMinorVersions(version, Constants.ConfigSchemaVersion);
-            }
-        }
-
-        /// <summary>
-        /// If called multiple times, this will currently overwrite the existing callback
-        /// </summary>
-        public void SetConfigUpdatedCallback(Func<EdgeHubConfig, Task> callback) =>
-            this.configUpdateCallback = Preconditions.CheckNotNull(callback, nameof(callback));
-
         async Task HandleDesiredPropertiesUpdate(IMessage desiredPropertiesUpdate)
         {
             try
@@ -202,13 +267,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
                         .Map(e => this.PatchDesiredProperties(e, twinCollection))
                         .GetOrElse(() => this.GetConfigInternal());
 
-                    await edgeHubConfig.ForEachAsync(async config =>
-                    {
-                        if (this.configUpdateCallback != null)
+                    await edgeHubConfig.ForEachAsync(
+                        async config =>
                         {
-                            await this.configUpdateCallback(config);
-                        }
-                    });
+                            if (this.configUpdateCallback != null)
+                            {
+                                await this.configUpdateCallback(config);
+                            }
+                        });
                 }
             }
             catch (Exception ex)
@@ -238,6 +304,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
                 edgeHubConfig = Option.None<EdgeHubConfig>();
                 Events.ErrorPatchingDesiredProperties(ex);
             }
+
             await this.UpdateReportedProperties(patch.Version, lastDesiredStatus);
             return edgeHubConfig;
         }
@@ -255,30 +322,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             {
                 Events.ErrorUpdatingLastDesiredStatus(ex);
                 return Task.CompletedTask;
-            }
-        }
-
-        internal async void DeviceDisconnected(object sender, IIdentity device)
-        {
-            try
-            {
-                await this.UpdateDeviceConnectionStatus(device, ConnectionStatus.Disconnected);
-            }
-            catch (Exception ex)
-            {
-                Events.ErrorHandlingDeviceDisconnectedEvent(device, ex);
-            }
-        }
-
-        internal async void DeviceConnected(object sender, IIdentity device)
-        {
-            try
-            {
-                await this.UpdateDeviceConnectionStatus(device, ConnectionStatus.Connected);
-            }
-            catch (Exception ex)
-            {
-                Events.ErrorHandlingDeviceConnectedEvent(device, ex);
             }
         }
 
@@ -342,118 +385,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             }
         }
 
-        internal async Task<DirectMethodResponse> HandleMethodInvocation(DirectMethodRequest request)
-        {
-            Preconditions.CheckNotNull(request, nameof(request));
-            Events.MethodRequestReceived(request.Name);
-            if (request.Name.Equals(Constants.ServiceIdentityRefreshMethodName, StringComparison.OrdinalIgnoreCase))
-            {
-                RefreshRequest refreshRequest;
-                try
-                {
-                    refreshRequest = request.Data.FromBytes<RefreshRequest>();
-                }
-                catch (Exception e)
-                {
-                    Events.ErrorParsingMethodRequest(e);
-                    return new DirectMethodResponse(e, HttpStatusCode.BadRequest);
-                }
-
-                try
-                {
-                    Events.RefreshingServiceIdentities(refreshRequest.DeviceIds);
-                    await this.deviceScopeIdentitiesCache.RefreshServiceIdentities(refreshRequest.DeviceIds);
-                    Events.RefreshedServiceIdentities(refreshRequest.DeviceIds);
-                    return new DirectMethodResponse(request.CorrelationId, null, (int)HttpStatusCode.OK);
-                }
-                catch (Exception e)
-                {
-                    Events.ErrorRefreshingServiceIdentities(e);
-                    return new DirectMethodResponse(e, HttpStatusCode.InternalServerError);
-                }
-            }
-            else
-            {
-                Events.InvalidMethodRequest(request.Name);
-                return new DirectMethodResponse(new InvalidOperationException($"Method {request.Name} is not supported"), HttpStatusCode.NotFound);
-            }
-        }
-
-        class RefreshRequest
-        {
-            [JsonConstructor]
-            public RefreshRequest(IEnumerable<string> deviceIds)
-            {
-                this.DeviceIds = deviceIds;
-            }
-
-            [JsonProperty("deviceIds")]
-            public IEnumerable<string> DeviceIds { get; }
-        }
-
-        class DesiredProperties
-        {
-            [JsonConstructor]
-            public DesiredProperties(string schemaVersion, IDictionary<string, string> routes, StoreAndForwardConfiguration storeAndForwardConfiguration)
-            {
-                this.SchemaVersion = schemaVersion;
-                this.Routes = routes;
-                this.StoreAndForwardConfiguration = storeAndForwardConfiguration;
-            }
-
-            public string SchemaVersion { get; }
-
-            public IDictionary<string, string> Routes { get; }
-
-            public StoreAndForwardConfiguration StoreAndForwardConfiguration { get; }
-        }
-
-        internal class ReportedProperties
-        {
-            const string CurrentSchemaVersion = "1.0";
-
-            static Dictionary<string, DeviceConnectionStatus> EmptyConnectionStatusesDictionary = new Dictionary<string, DeviceConnectionStatus>();
-
-            // When reporting last desired version/status, send empty map of clients so that the patch doesn't touch the
-            // existing values. If we send a null, it will clear out the existing clients.
-            public ReportedProperties(VersionInfo versionInfo, long lastDesiredVersion, LastDesiredStatus lastDesiredStatus)
-                : this(versionInfo, CurrentSchemaVersion, lastDesiredVersion, lastDesiredStatus, EmptyConnectionStatusesDictionary)
-            {
-            }
-
-            public ReportedProperties(VersionInfo versionInfo, IDictionary<string, DeviceConnectionStatus> clients)
-                : this(versionInfo, CurrentSchemaVersion, null, null, clients) { }
-
-            [JsonConstructor]
-            public ReportedProperties(
-                VersionInfo versionInfo, string schemaVersion,
-                long? lastDesiredVersion, LastDesiredStatus lastDesiredStatus,
-                IDictionary<string, DeviceConnectionStatus> clients
-            )
-            {
-                this.SchemaVersion = schemaVersion;
-                this.LastDesiredVersion = lastDesiredVersion;
-                this.LastDesiredStatus = lastDesiredStatus;
-                this.Clients = clients;
-                this.VersionInfo = versionInfo ?? VersionInfo.Empty;
-            }
-
-            [JsonProperty(PropertyName = "schemaVersion")]
-            public string SchemaVersion { get; }
-
-            [JsonProperty(PropertyName = "lastDesiredVersion", NullValueHandling = NullValueHandling.Ignore)]
-            public long? LastDesiredVersion { get; }
-
-            [JsonProperty(PropertyName = "lastDesiredStatus", NullValueHandling = NullValueHandling.Ignore)]
-            public LastDesiredStatus LastDesiredStatus { get; }
-
-            [JsonProperty(PropertyName = "clients")]
-            public IDictionary<string, DeviceConnectionStatus> Clients { get; }
-
-            [JsonProperty(PropertyName = "version")]
-            public VersionInfo VersionInfo { get; }
-        }
-
         internal class LastDesiredStatus
         {
             public LastDesiredStatus(int code, string description)
@@ -469,6 +400,73 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             public string Description { get; set; }
         }
 
+        internal class ReportedProperties
+        {
+            const string CurrentSchemaVersion = "1.0";
+
+            static readonly Dictionary<string, DeviceConnectionStatus> EmptyConnectionStatusesDictionary = new Dictionary<string, DeviceConnectionStatus>();
+
+            // When reporting last desired version/status, send empty map of clients so that the patch doesn't touch the
+            // existing values. If we send a null, it will clear out the existing clients.
+            public ReportedProperties(VersionInfo versionInfo, long lastDesiredVersion, LastDesiredStatus lastDesiredStatus)
+                : this(versionInfo, CurrentSchemaVersion, lastDesiredVersion, lastDesiredStatus, EmptyConnectionStatusesDictionary)
+            {
+            }
+
+            public ReportedProperties(VersionInfo versionInfo, IDictionary<string, DeviceConnectionStatus> clients)
+                : this(versionInfo, CurrentSchemaVersion, null, null, clients)
+            {
+            }
+
+            [JsonConstructor]
+            public ReportedProperties(
+                VersionInfo versionInfo,
+                string schemaVersion,
+                long? lastDesiredVersion,
+                LastDesiredStatus lastDesiredStatus,
+                IDictionary<string, DeviceConnectionStatus> clients
+            )
+            {
+                this.SchemaVersion = schemaVersion;
+                this.LastDesiredVersion = lastDesiredVersion;
+                this.LastDesiredStatus = lastDesiredStatus;
+                this.Clients = clients;
+                this.VersionInfo = versionInfo ?? VersionInfo.Empty;
+            }
+
+            [JsonProperty(PropertyName = "clients")]
+            public IDictionary<string, DeviceConnectionStatus> Clients { get; }
+
+            [JsonProperty(PropertyName = "lastDesiredStatus", NullValueHandling = NullValueHandling.Ignore)]
+            public LastDesiredStatus LastDesiredStatus { get; }
+
+            [JsonProperty(PropertyName = "lastDesiredVersion", NullValueHandling = NullValueHandling.Ignore)]
+            public long? LastDesiredVersion { get; }
+
+            [JsonProperty(PropertyName = "schemaVersion")]
+            public string SchemaVersion { get; }
+
+            [JsonProperty(PropertyName = "version")]
+            public VersionInfo VersionInfo { get; }
+        }
+
+        class DesiredProperties
+        {
+            [JsonConstructor]
+            public DesiredProperties(string schemaVersion, IDictionary<string, string> routes, StoreAndForwardConfiguration storeAndForwardConfiguration)
+            {
+                this.SchemaVersion = schemaVersion;
+                this.Routes = routes;
+                this.StoreAndForwardConfiguration = storeAndForwardConfiguration;
+            }
+
+            public IDictionary<string, string> Routes { get; }
+
+            public string SchemaVersion { get; }
+
+            public StoreAndForwardConfiguration StoreAndForwardConfiguration { get; }
+        }
+
         /// <summary>
         /// The Edge hub device proxy, that receives communication for the EdgeHub from the cloud.
         /// Currently only receives DesiredProperties updates.
@@ -482,9 +480,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
                 this.edgeHubConnection = edgeHubConnection;
             }
 
-            public bool IsActive => true;
-
             public IIdentity Identity => this.edgeHubConnection.edgeHubIdentity;
+
+            public bool IsActive => true;
 
             public Task CloseAsync(Exception ex) => Task.CompletedTask;
 
@@ -543,77 +541,18 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
                 MethodRequestReceived
             }
 
-            internal static void Initialized(IIdentity edgeHubIdentity)
-            {
-                Log.LogDebug((int)EventIds.Initialized, Invariant($"Initialized connection for {edgeHubIdentity.Id}"));
-            }
-
-            internal static void ErrorUpdatingLastDesiredStatus(Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorUpdatingLastDesiredStatus, ex,
-                    Invariant($"Error updating last desired status for edge hub"));
-            }
-
-            internal static void ErrorHandlingDesiredPropertiesUpdate(Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorHandlingDesiredPropertiesUpdate, ex,
-                    Invariant($"Error handling desired properties update for edge hub"));
-            }
-
-            internal static void ErrorPatchingDesiredProperties(Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorPatchingDesiredProperties, ex,
-                    Invariant($"Error merging desired properties patch with existing desired properties for edge hub"));
-            }
-
-            internal static void ErrorHandlingDeviceConnectedEvent(IIdentity device, Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorHandlingDeviceConnectedEvent, ex,
-                    Invariant($"Error handling device connected event for device {device?.Id ?? string.Empty}"));
-            }
-
-            internal static void ErrorHandlingDeviceDisconnectedEvent(IIdentity device, Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorHandlingDeviceDisconnectedEvent, ex,
-                    Invariant($"Error handling device disconnected event for device {device?.Id ?? string.Empty}"));
-            }
-
-            internal static void ErrorUpdatingDeviceConnectionStatus(string deviceId, Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorUpdatingDeviceConnectionStatus, ex,
-                    Invariant($"Error updating device connection status for device {deviceId ?? string.Empty}"));
-            }
-
             public static void ErrorGettingEdgeHubConfig(Exception ex)
             {
-                Log.LogWarning((int)EventIds.ErrorPatchingDesiredProperties, ex,
+                Log.LogWarning(
+                    (int)EventIds.ErrorPatchingDesiredProperties,
+                    ex,
                     Invariant($"Error getting edge hub config from twin desired properties"));
-            }
-
-            internal static void GetConfigSuccess()
-            {
-                Log.LogInformation((int)EventIds.GetConfigSuccess, Invariant($"Obtained edge hub config from module twin"));
-            }
-
-            internal static void PatchConfigSuccess()
-            {
-                Log.LogInformation((int)EventIds.PatchConfigSuccess, Invariant($"Obtained edge hub config patch update from module twin"));
-            }
-
-            internal static void ErrorClearingDeviceConnectionStatuses(Exception ex)
-            {
-                Log.LogWarning((int)EventIds.ErrorClearingDeviceConnectionStatuses, ex,
-                    Invariant($"Error clearing device connection statuses"));
-            }
-
-            internal static void UpdatingDeviceConnectionStatus(string deviceId, ConnectionStatus connectionStatus)
-            {
-                Log.LogDebug((int)EventIds.UpdatingDeviceConnectionStatus, Invariant($"Updating device {deviceId} connection status to {connectionStatus}"));
             }
 
             public static void MismatchedMinorVersions(Version receivedVersion, Version expectedVersion)
             {
-                Log.LogWarning((int)EventIds.MismatchedSchemaVersion,
+                Log.LogWarning(
+                    (int)EventIds.MismatchedSchemaVersion,
                     Invariant($"Desired properties schema version {receivedVersion} does not match expected schema version {expectedVersion}. Some settings may not be supported."));
             }
 
@@ -651,6 +590,94 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             {
                 Log.LogDebug((int)EventIds.SkipUpdatingEdgeHubIdentity, Invariant($"Skipped updating connection status change to {connectionStatus} for {id}"));
             }
+
+            internal static void Initialized(IIdentity edgeHubIdentity)
+            {
+                Log.LogDebug((int)EventIds.Initialized, Invariant($"Initialized connection for {edgeHubIdentity.Id}"));
+            }
+
+            internal static void ErrorUpdatingLastDesiredStatus(Exception ex)
+            {
+                Log.LogWarning(
+                    (int)EventIds.ErrorUpdatingLastDesiredStatus,
+                    ex,
+                    Invariant($"Error updating last desired status for edge hub"));
+            }
+
+            internal static void ErrorHandlingDesiredPropertiesUpdate(Exception ex)
+            {
+                Log.LogWarning(
+                    (int)EventIds.ErrorHandlingDesiredPropertiesUpdate,
+                    ex,
+                    Invariant($"Error handling desired properties update for edge hub"));
+            }
+
+            internal static void ErrorPatchingDesiredProperties(Exception ex)
+            {
+                Log.LogWarning(
+                    (int)EventIds.ErrorPatchingDesiredProperties,
+                    ex,
+                    Invariant($"Error merging desired properties patch with existing desired properties for edge hub"));
+            }
+
+            internal static void ErrorHandlingDeviceConnectedEvent(IIdentity device, Exception ex)
+            {
+                Log.LogWarning(
+                    (int)EventIds.ErrorHandlingDeviceConnectedEvent,
+                    ex,
+                    Invariant($"Error handling device connected event for device {device?.Id ?? string.Empty}"));
+            }
+
+            internal static void ErrorHandlingDeviceDisconnectedEvent(IIdentity device, Exception ex)
+            {
+                Log.LogWarning(
+                    (int)EventIds.ErrorHandlingDeviceDisconnectedEvent,
+                    ex,
+                    Invariant($"Error handling device disconnected event for device {device?.Id ?? string.Empty}"));
+            }
+
+            internal static void ErrorUpdatingDeviceConnectionStatus(string deviceId, Exception ex)
+            {
+                Log.LogWarning(
+                    (int)EventIds.ErrorUpdatingDeviceConnectionStatus,
+                    ex,
+                    Invariant($"Error updating device connection status for device {deviceId ?? string.Empty}"));
+            }
+
+            internal static void GetConfigSuccess()
+            {
+                Log.LogInformation((int)EventIds.GetConfigSuccess, Invariant($"Obtained edge hub config from module twin"));
+            }
+
+            internal static void PatchConfigSuccess()
+            {
+                Log.LogInformation((int)EventIds.PatchConfigSuccess, Invariant($"Obtained edge hub config patch update from module twin"));
+            }
+
+            internal static void ErrorClearingDeviceConnectionStatuses(Exception ex)
+            {
+                Log.LogWarning(
+                    (int)EventIds.ErrorClearingDeviceConnectionStatuses,
+                    ex,
+                    Invariant($"Error clearing device connection statuses"));
+            }
+
+            internal static void UpdatingDeviceConnectionStatus(string deviceId, ConnectionStatus connectionStatus)
+            {
+                Log.LogDebug((int)EventIds.UpdatingDeviceConnectionStatus, Invariant($"Updating device {deviceId} connection status to {connectionStatus}"));
+            }
+        }
+
+        class RefreshRequest
+        {
+            [JsonConstructor]
+            public RefreshRequest(IEnumerable<string> deviceIds)
+            {
+                this.DeviceIds = deviceIds;
+            }
+
+            [JsonProperty("deviceIds")]
+            public IEnumerable<string> DeviceIds { get; }
         }
     }
 }

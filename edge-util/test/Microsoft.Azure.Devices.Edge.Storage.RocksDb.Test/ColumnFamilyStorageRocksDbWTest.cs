@@ -3,7 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb.Test
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Unit]

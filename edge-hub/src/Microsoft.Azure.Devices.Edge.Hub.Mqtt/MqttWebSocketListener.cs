@@ -7,15 +7,18 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
     using System.Net.WebSockets;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
+
     using DotNetty.Buffers;
     using DotNetty.Codecs.Mqtt;
     using DotNetty.Transport.Channels;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt;
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt.Persistence;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
 
     class MqttWebSocketListener : IWebSocketListener

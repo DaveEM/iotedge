@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class EncryptedStore<TK, TV> : IKeyValueStore<TK, TV>
@@ -107,18 +108,18 @@ namespace Microsoft.Azure.Devices.Edge.Storage
                 cancellationToken);
         }
 
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
                 this.entityStore?.Dispose();
             }
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

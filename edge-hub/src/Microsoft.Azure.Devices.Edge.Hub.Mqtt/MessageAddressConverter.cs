@@ -1,15 +1,18 @@
 // Copyright (c) Microsoft. All rights reserved.
 namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
     using Microsoft.Azure.Devices.Client.Common;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.ProtocolGateway;
     using Microsoft.Extensions.Logging;
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
+
     using static System.FormattableString;
+
     using IProtocolGatewayMessage = Microsoft.Azure.Devices.ProtocolGateway.Messaging.IMessage;
 
     /// <summary>
@@ -62,7 +65,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             {
                 try
                 {
-                    address = template.Bind(message.SystemProperties);                    
+                    address = template.Bind(message.SystemProperties);
                     if (!string.IsNullOrWhiteSpace(address) && messagePropertiesToSend != null && messagePropertiesToSend.Count > 0)
                     {
                         address = Invariant($"{address.TrimEnd('/')}/{UrlEncodedDictionarySerializer.Serialize(messagePropertiesToSend)}");

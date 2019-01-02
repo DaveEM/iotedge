@@ -45,9 +45,19 @@ namespace Microsoft.Azure.WebJobs.Extensions.EdgeHub
         public static readonly bool DefaultFirstFastRetry = true;
 
         /// <summary>
-        /// Returns a default policy that performs no retries, but invokes the action only once.
+        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy" /> class.
         /// </summary>
-        public static RetryStrategy NoRetry { get; } = new FixedInterval(0, DefaultRetryInterval);
+        /// <param name="firstFastRetry">true to immediately retry in the first attempt; otherwise, false. The subsequent retries will remain subject to the configured retry interval.</param>
+        protected RetryStrategy(bool firstFastRetry)
+        {
+            this.FastFirstRetry = firstFastRetry;
+        }
+
+        /// <summary>
+        /// Returns a default policy that implements a random exponential retry interval configured with the <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultClientRetryCount" />, <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultMinBackoff" />, <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultMaxBackoff" />, and <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultClientBackoff" /> parameters.
+        /// The default retry policy treats all caught exceptions as transient errors.
+        /// </summary>
+        public static RetryStrategy DefaultExponential { get; } = new ExponentialBackoff(DefaultClientRetryCount, DefaultMinBackoff, DefaultMaxBackoff, DefaultClientBackoff);
 
         /// <summary>
         /// Returns a default policy that implements a fixed retry interval configured with the <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultClientRetryCount" /> and <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultRetryInterval" /> parameters.
@@ -62,29 +72,15 @@ namespace Microsoft.Azure.WebJobs.Extensions.EdgeHub
         public static RetryStrategy DefaultProgressive { get; } = new Incremental(DefaultClientRetryCount, DefaultRetryInterval, DefaultRetryIncrement);
 
         /// <summary>
-        /// Returns a default policy that implements a random exponential retry interval configured with the <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultClientRetryCount" />, <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultMinBackoff" />, <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultMaxBackoff" />, and <see cref="F:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy.DefaultClientBackoff" /> parameters.
-        /// The default retry policy treats all caught exceptions as transient errors.
+        /// Returns a default policy that performs no retries, but invokes the action only once.
         /// </summary>
-        public static RetryStrategy DefaultExponential { get; } = new ExponentialBackoff(DefaultClientRetryCount, DefaultMinBackoff, DefaultMaxBackoff, DefaultClientBackoff);
+        public static RetryStrategy NoRetry { get; } = new FixedInterval(0, DefaultRetryInterval);
 
         /// <summary>
         /// Gets or sets a value indicating whether the first retry attempt will be made immediately,
         /// whereas subsequent retries will remain subject to the retry interval.
         /// </summary>
-        public bool FastFirstRetry
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="T:Microsoft.Azure.WebJobs.Extensions.EdgeHub.RetryStrategy" /> class.
-        /// </summary>
-        /// <param name="firstFastRetry">true to immediately retry in the first attempt; otherwise, false. The subsequent retries will remain subject to the configured retry interval.</param>
-        protected RetryStrategy(bool firstFastRetry)
-        {
-            this.FastFirstRetry = firstFastRetry;
-        }
+        public bool FastFirstRetry { get; set; }
 
         /// <summary>
         /// Returns the corresponding ShouldRetry delegate.

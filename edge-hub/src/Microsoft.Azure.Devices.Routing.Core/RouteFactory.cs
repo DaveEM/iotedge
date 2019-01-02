@@ -3,9 +3,11 @@ namespace Microsoft.Azure.Devices.Routing.Core
 {
     using System.Collections.Generic;
     using System.Linq;
+
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
     using Antlr4.Runtime.Tree;
+
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
     using Microsoft.Azure.Devices.Routing.Core.Query;
     using Microsoft.Azure.Devices.Routing.Core.Util;
@@ -28,7 +30,7 @@ namespace Microsoft.Azure.Devices.Routing.Core
         public Route Create(string routeString)
         {
             // Parse route into constituents
-            this.ParseRoute(Preconditions.CheckNotNull(routeString, nameof(routeString)), out IMessageSource messageSource, out string condition, out Endpoint endpoint);            
+            this.ParseRoute(Preconditions.CheckNotNull(routeString, nameof(routeString)), out IMessageSource messageSource, out string condition, out Endpoint endpoint);
             var route = new Route(this.GetNextRouteId(), condition, this.IotHubName, messageSource, new HashSet<Endpoint> { endpoint });
             return route;
         }
@@ -60,20 +62,20 @@ namespace Microsoft.Azure.Devices.Routing.Core
             endpoint = listener.Endpoint;
         }
 
-        private class RouteParserListener : RouteBaseListener
+        class RouteParserListener : RouteBaseListener
         {
             readonly IEndpointFactory endpointFactory;
-            
+
             public RouteParserListener(IEndpointFactory endpointFactory)
             {
                 this.endpointFactory = endpointFactory;
             }
 
-            public string Source { get; private set; }
+            public string Condition { get; private set; }
 
             public Endpoint Endpoint { get; private set; }
 
-            public string Condition { get; private set; }
+            public string Source { get; private set; }
 
             public override void ExitSource(RouteParser.SourceContext context)
             {
@@ -98,9 +100,9 @@ namespace Microsoft.Azure.Devices.Routing.Core
             }
 
             public override void ExitFuncEndpoint(RouteParser.FuncEndpointContext context)
-            {                
+            {
                 string funcName = context.func.Text;
-                string address = context.endpoint.Text.Trim('"'); 
+                string address = context.endpoint.Text.Trim('"');
                 Endpoint endpoint = this.endpointFactory.CreateFunctionEndpoint(funcName, address);
                 this.Endpoint = endpoint;
             }

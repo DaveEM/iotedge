@@ -3,7 +3,9 @@ namespace LeafDevice
 {
     using System;
     using System.Threading.Tasks;
+
     using McMaster.Extensions.CommandLineUtils;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
 
     [Command(
@@ -31,21 +33,15 @@ Defaults:
   --certificate             Empty String.
   --edge-hostname           Empty String.
 "
-        )]
+    )]
     [HelpOption]
     class Program
     {
-        // ReSharper disable once UnusedMember.Local
-        static int Main(string[] args) => CommandLineApplication.ExecuteAsync<Program>(args).Result;
+        [Option("-ct|--certificate <value>", Description = "Certificate file to be installed on the machine.")]
+        public string CertificateFileName { get; } = "";
 
         [Option("-c|--connection-string <value>", Description = "Device connection string (hub-scoped, e.g. iothubowner)")]
         public string DeviceConnectionString { get; } = Environment.GetEnvironmentVariable("iothubConnectionString");
-
-        [Option("-e|--eventhub-endpoint <value>", Description = "Event Hub-compatible endpoint for IoT Hub, including EntityPath")]
-        public string EventHubCompatibleEndpointWithEntityPath { get; } = Environment.GetEnvironmentVariable("eventhubCompatibleEndpointWithEntityPath");
-
-        [Option("-ct|--certificate <value>", Description = "Certificate file to be installed on the machine.")]
-        public string CertificateFileName { get; } = "";
 
         [Option("-d|--device-id", Description = "Leaf device identifier to be registered with IoT Hub")]
         public string DeviceId { get; } = $"leaf-device--{Guid.NewGuid()}";
@@ -53,8 +49,14 @@ Defaults:
         [Option("-ed|--edge-hostname", Description = "Leaf device identifier to be registered with IoT Hub")]
         public string EdgeHostName { get; } = "";
 
+        [Option("-e|--eventhub-endpoint <value>", Description = "Event Hub-compatible endpoint for IoT Hub, including EntityPath")]
+        public string EventHubCompatibleEndpointWithEntityPath { get; } = Environment.GetEnvironmentVariable("eventhubCompatibleEndpointWithEntityPath");
+
         [Option("--use-web-sockets", CommandOptionType.NoValue, Description = "Use websockets for IoT Hub connections.")]
         public bool UseWebSockets { get; } = false;
+
+        // ReSharper disable once UnusedMember.Local
+        static int Main(string[] args) => CommandLineApplication.ExecuteAsync<Program>(args).Result;
 
         // ReSharper disable once UnusedMember.Local
         async Task<int> OnExecuteAsync()
@@ -62,10 +64,10 @@ Defaults:
             try
             {
                 string connectionString = this.DeviceConnectionString ??
-                    await SecretsHelper.GetSecretFromConfigKey("iotHubConnStrKey");
+                                          await SecretsHelper.GetSecretFromConfigKey("iotHubConnStrKey");
 
                 string endpoint = this.EventHubCompatibleEndpointWithEntityPath ??
-                    await SecretsHelper.GetSecretFromConfigKey("eventHubConnStrKey");
+                                  await SecretsHelper.GetSecretFromConfigKey("eventHubConnStrKey");
 
                 var test = new LeafDevice(
                     connectionString,

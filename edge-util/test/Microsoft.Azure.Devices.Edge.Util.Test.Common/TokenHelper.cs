@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Common
 
     public static class TokenHelper
     {
-        public static string CreateSasToken(string resourceUri, string key = null, bool expired = false) => 
+        public static string CreateSasToken(string resourceUri, string key = null, bool expired = false) =>
             CreateSasToken(resourceUri, (expired ? new DateTime(2010, 1, 1) : new DateTime(2020, 1, 1)), key);
 
         public static string CreateSasToken(string resourceUri, DateTime expiryTime, string key = null)
@@ -32,6 +32,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Common
             {
                 sb.Append('a' + rand.Next(0, 25));
             }
+
             return sb.ToString();
         }
     }

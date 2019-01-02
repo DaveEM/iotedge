@@ -5,9 +5,12 @@ namespace Microsoft.Azure.Devices.Edge.Storage.Test
     using System.Collections.Generic;
     using System.Text;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
+
     using Xunit;
 
     [Unit]
@@ -108,6 +111,18 @@ namespace Microsoft.Azure.Devices.Edge.Storage.Test
 
         static IEntityStore<TK, TV> GetEntityStore<TK, TV>(string entityName) => new EntityStore<TK, TV>(new InMemoryDbStore(), entityName);
 
+        public class KeyAuth
+        {
+            [JsonConstructor]
+            public KeyAuth(string key)
+            {
+                this.Key = key;
+            }
+
+            [JsonProperty("key")]
+            public string Key { get; }
+        }
+
         class TestDevice
         {
             [JsonConstructor]
@@ -117,23 +132,11 @@ namespace Microsoft.Azure.Devices.Edge.Storage.Test
                 this.Auth = auth;
             }
 
-            [JsonProperty("genId")]
-            public string GenId { get; }
-
             [JsonProperty("auth")]
             public KeyAuth Auth { get; }
-        }
 
-        public class KeyAuth
-        {
-            [JsonConstructor]
-            public KeyAuth(string key)
-            {
-                this.Key = key;                
-            }
-
-            [JsonProperty("key")]
-            public string Key { get; }
+            [JsonProperty("genId")]
+            public string GenId { get; }
         }
 
         class TestEncryptionProvider : IEncryptionProvider

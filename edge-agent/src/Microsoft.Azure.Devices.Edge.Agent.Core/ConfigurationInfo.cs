@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
 {
     using System;
     using System.Collections.Generic;
+
     using Newtonsoft.Json;
 
     public class ConfigurationInfo : IEquatable<ConfigurationInfo>

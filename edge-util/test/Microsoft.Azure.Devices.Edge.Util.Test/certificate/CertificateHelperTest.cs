@@ -2,17 +2,19 @@
 namespace Microsoft.Azure.Devices.Edge.Util.Test.Certificate
 {
     using System;
-    using System.IO;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
+
     using Microsoft.Azure.Devices.Edge.Util.Edged.GeneratedCode;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
+
     using CertificateHelper = Microsoft.Azure.Devices.Edge.Util.CertificateHelper;
     using TestCertificateHelper = Microsoft.Azure.Devices.Edge.Util.Test.Common.CertificateHelper;
-    using System.Security.Cryptography;
 
     [Unit]
     public class CertificateHelperTest
@@ -65,10 +67,12 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Certificate
         public void ClientCertCallbackNullArgumentThrows()
         {
             var trustedCACerts = Option.None<IList<X509Certificate2>>();
-            Assert.Throws<ArgumentNullException>(() =>
-            CertificateHelper.ValidateClientCert(null, new List<X509Certificate2>(), trustedCACerts, Logger.Factory.CreateLogger("something")));
-            Assert.Throws<ArgumentNullException>(() =>
-            CertificateHelper.ValidateClientCert(new X509Certificate2(), null, trustedCACerts, Logger.Factory.CreateLogger("something")));            
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                    CertificateHelper.ValidateClientCert(null, new List<X509Certificate2>(), trustedCACerts, Logger.Factory.CreateLogger("something")));
+            Assert.Throws<ArgumentNullException>(
+                () =>
+                    CertificateHelper.ValidateClientCert(new X509Certificate2(), null, trustedCACerts, Logger.Factory.CreateLogger("something")));
         }
 
         [Fact]
@@ -79,7 +83,6 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Certificate
             var trustedCACerts = Option.Some(ca);
             Assert.False(CertificateHelper.ValidateClientCert(cert, new List<X509Certificate2>(), trustedCACerts, Logger.Factory.CreateLogger("something")));
         }
-
 
         [Fact]
         public void ExtractCertsNullArgumentFails()
@@ -297,7 +300,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Certificate
         {
             var notBefore = DateTime.Now.Subtract(TimeSpan.FromDays(2));
             var notAfter = DateTime.Now.Subtract(TimeSpan.FromDays(1));
-            var (clientCert, clientKeyPair) =  TestCertificateHelper.GenerateSelfSignedCert("MyTestClient", notBefore, notAfter, false);
+            var (clientCert, clientKeyPair) = TestCertificateHelper.GenerateSelfSignedCert("MyTestClient", notBefore, notAfter, false);
             Assert.False(CertificateHelper.ValidateClientCert(clientCert, new List<X509Certificate2>() { clientCert }, Option.None<IList<X509Certificate2>>(), Logger.Factory.CreateLogger("something")));
         }
 

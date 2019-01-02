@@ -4,6 +4,7 @@ namespace MessagesAnalyzer
     using System;
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
 
@@ -76,7 +77,8 @@ namespace MessagesAnalyzer
             if (DateTime.Compare(lastMessageDateTime.AddMilliseconds(toleranceInMilliseconds), endDateTime) < 0)
                 return new ModuleReport(moduleId, StatusCode.OldMessages, totalMessagesCounter, $"No messages received for the past {toleranceInMilliseconds} milliseconds", lastMessageDateTime, missingIntervals);
 
-            return missingCounter > 0 ? new ModuleReport(moduleId, StatusCode.SkippedMessages, totalMessagesCounter, $"Missing messages: {missingCounter}", lastMessageDateTime, missingIntervals)
+            return missingCounter > 0
+                ? new ModuleReport(moduleId, StatusCode.SkippedMessages, totalMessagesCounter, $"Missing messages: {missingCounter}", lastMessageDateTime, missingIntervals)
                 : new ModuleReport(moduleId, StatusCode.AllMessages, totalMessagesCounter, $"All messages received", lastMessageDateTime);
         }
     }

@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
@@ -68,20 +69,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             }
         }
 
-        void AddMessageSystemProperties(IMessage message)
-        {
-            if (this.Identity is IDeviceIdentity deviceIdentity)
-            {
-                message.SystemProperties[SystemProperties.ConnectionDeviceId] = deviceIdentity.DeviceId;
-            }
-
-            if (this.Identity is IModuleIdentity moduleIdentity)
-            {
-                message.SystemProperties[SystemProperties.ConnectionDeviceId] = moduleIdentity.DeviceId;
-                message.SystemProperties[SystemProperties.ConnectionModuleId] = moduleIdentity.ModuleId;
-            }
-        }
-
         internal static IList<AmqpMessage> ExpandBatchedMessage(AmqpMessage message)
         {
             var outputMessages = new List<AmqpMessage>();
@@ -102,6 +89,20 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             }
 
             return outputMessages;
+        }
+
+        void AddMessageSystemProperties(IMessage message)
+        {
+            if (this.Identity is IDeviceIdentity deviceIdentity)
+            {
+                message.SystemProperties[SystemProperties.ConnectionDeviceId] = deviceIdentity.DeviceId;
+            }
+
+            if (this.Identity is IModuleIdentity moduleIdentity)
+            {
+                message.SystemProperties[SystemProperties.ConnectionDeviceId] = moduleIdentity.DeviceId;
+                message.SystemProperties[SystemProperties.ConnectionModuleId] = moduleIdentity.ModuleId;
+            }
         }
 
         void HandleException(Exception ex, AmqpMessage incoming, IList<AmqpMessage> outgoing)

@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Util.Test.Common
 {
     using System;
+
     using Xunit.Sdk;
 
     [TraitDiscoverer("Microsoft.Azure.Devices.Edge.Util.Test.Common.IntegrationDiscoverer", "Microsoft.Azure.Devices.Edge.Util.Test.Common")]

@@ -2,7 +2,9 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Service.Modules
 {
     using System.Threading.Tasks;
+
     using Autofac;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Reporters;
@@ -15,7 +17,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service.Modules
         readonly string configFilename;
         readonly IConfiguration configuration;
 
-        public FileConfigSourceModule(string configFilename,
+        public FileConfigSourceModule(
+            string configFilename,
             IConfiguration configuration)
         {
             this.configFilename = Preconditions.CheckNonWhiteSpace(configFilename, nameof(configFilename));
@@ -26,15 +29,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service.Modules
         {
             // Task<IConfigSource>
             builder.Register(
-                async c =>
-                {
-                    var serde = c.Resolve<ISerde<DeploymentConfigInfo>>();
-                    IConfigSource config = await FileConfigSource.Create(
-                        this.configFilename,
-                        this.configuration,
-                        serde);
-                    return config;
-                })
+                    async c =>
+                    {
+                        var serde = c.Resolve<ISerde<DeploymentConfigInfo>>();
+                        IConfigSource config = await FileConfigSource.Create(
+                            this.configFilename,
+                            this.configuration,
+                            serde);
+                        return config;
+                    })
                 .As<Task<IConfigSource>>()
                 .SingleInstance();
 

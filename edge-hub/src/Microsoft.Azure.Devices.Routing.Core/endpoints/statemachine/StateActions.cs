@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     /// <summary>
@@ -12,9 +13,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
     /// </summary>
     class StateActions
     {
-        public Func<EndpointExecutorFsm, Task> Enter { get; }
-
-        public Func<EndpointExecutorFsm, Task> Exit { get; }
+        public static readonly StateActions Null = new StateActions();
 
         public StateActions()
             : this(NullAction, NullAction)
@@ -27,7 +26,9 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints.StateMachine
             this.Exit = exit;
         }
 
-        public static readonly StateActions Null = new StateActions();
+        public Func<EndpointExecutorFsm, Task> Enter { get; }
+
+        public Func<EndpointExecutorFsm, Task> Exit { get; }
 
         public static Task NullAction(EndpointExecutorFsm machine) => TaskEx.Done;
     }

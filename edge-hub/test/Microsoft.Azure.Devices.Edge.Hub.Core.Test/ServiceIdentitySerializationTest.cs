@@ -3,9 +3,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Test
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service;
     using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class ServiceIdentitySerializationTest

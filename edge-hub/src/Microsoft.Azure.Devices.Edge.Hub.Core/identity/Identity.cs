@@ -10,15 +10,15 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
             this.IotHubHostName = iotHubHostName;
         }
 
-        public string IotHubHostName { get; }
-
         public abstract string Id { get; }
+
+        public string IotHubHostName { get; }
 
         public override bool Equals(object obj)
         {
             return obj is Identity identity &&
-                this.IotHubHostName == identity.IotHubHostName &&
-                this.Id == identity.Id;
+                   this.IotHubHostName == identity.IotHubHostName &&
+                   this.Id == identity.Id;
         }
 
         public override int GetHashCode()

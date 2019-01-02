@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Util;
 
@@ -9,7 +10,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
     {
         readonly Lazy<string> asString;
 
-        public ModuleIdentity(string iotHubHostName,
+        public ModuleIdentity(
+            string iotHubHostName,
             string deviceId,
             string moduleId)
             : base(iotHubHostName)
@@ -21,9 +23,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
 
         public string DeviceId { get; }
 
-        public string ModuleId { get; }
-
         public override string Id => FormattableString.Invariant($"{this.DeviceId}/{this.ModuleId}");
+
+        public string ModuleId { get; }
 
         public override string ToString() => this.asString.Value;
     }

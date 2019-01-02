@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
 {
     using System.Diagnostics.CodeAnalysis;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Checkpointers;
     using Microsoft.Azure.Devices.Routing.Core.Endpoints;
 
@@ -33,6 +34,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
         public Task<IEndpointExecutor> CreateAsync(Endpoint endpoint, ICheckpointer checkpointer, EndpointExecutorConfig endpointExecutorConfig)
         {
             return this.underlying.CreateAsync(endpoint, checkpointer, endpointExecutorConfig);
-        }        
+        }
     }
 }

@@ -3,9 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
 {
     public interface IClientCredentials
     {
-        IIdentity Identity { get; }
-
         AuthenticationType AuthenticationType { get; }
+
+        IIdentity Identity { get; }
 
         string ProductInfo { get; }
     }

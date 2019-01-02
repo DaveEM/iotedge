@@ -3,7 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Serde
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -43,7 +45,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Serde
 
         public T Deserialize(string json) => this.Deserialize<T>(json);
 
-        public TU Deserialize<TU>(string json) where TU : T
+        public TU Deserialize<TU>(string json)
+            where TU : T
         {
             try
             {

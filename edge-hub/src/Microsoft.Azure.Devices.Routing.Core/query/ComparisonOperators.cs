@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core.Query
 {
     using System;
+
     using Microsoft.Azure.Devices.Routing.Core.Query.Types;
 
     public static class ComparisonOperators
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
+
             return result;
         }
 
@@ -77,6 +79,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
+
             return result;
         }
 
@@ -115,6 +118,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
+
             return result;
         }
 
@@ -153,6 +157,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
+
             return result;
         }
 
@@ -178,6 +183,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
+
             return result;
         }
 
@@ -201,6 +207,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
                 default:
                     throw new ArgumentOutOfRangeException(nameof(op), op, null);
             }
+
             return result;
         }
 

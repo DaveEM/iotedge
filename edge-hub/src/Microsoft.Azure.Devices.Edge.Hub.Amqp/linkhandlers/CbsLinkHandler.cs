@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Common;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
@@ -18,9 +19,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             this.Link = Preconditions.CheckNotNull(link, nameof(link));
         }
 
-        public Uri LinkUri { get; }
+        public string CorrelationId { get; } = Guid.NewGuid().ToString();
 
         public IAmqpLink Link { get; }
+
+        public Uri LinkUri { get; }
 
         public LinkType Type => LinkType.Cbs;
 
@@ -43,8 +46,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
             Events.Closing(this.Link);
             return Task.CompletedTask;
         }
-
-        public string CorrelationId { get; } = Guid.NewGuid().ToString();
 
         public Task OpenAsync(TimeSpan timeout) => Task.CompletedTask;
 

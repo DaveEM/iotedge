@@ -3,7 +3,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class RegistryCredentials : IEquatable<RegistryCredentials>
@@ -18,11 +20,11 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
         [JsonProperty(Required = Required.Always, PropertyName = "address")]
         public string Address { get; }
 
-        [JsonProperty(Required = Required.Always, PropertyName = "username")]
-        public string Username { get; }
-
         [JsonProperty(Required = Required.Always, PropertyName = "password")]
         public string Password { get; }
+
+        [JsonProperty(Required = Required.Always, PropertyName = "username")]
+        public string Username { get; }
 
         public override bool Equals(object obj) => this.Equals(obj as RegistryCredentials);
 

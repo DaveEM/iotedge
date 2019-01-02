@@ -4,5 +4,5 @@ namespace Microsoft.Azure.Devices.Routing.Core.MessageSources
     public interface IMessageSource
     {
         bool Match(IMessageSource messageSource);
-    }    
+    }
 }

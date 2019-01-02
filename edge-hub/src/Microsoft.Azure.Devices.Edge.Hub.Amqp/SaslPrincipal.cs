@@ -4,8 +4,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
     using System;
     using System.Security.Principal;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
+
     using IIdentity = System.Security.Principal.IIdentity;
 
     class SaslPrincipal : IPrincipal, IAmqpAuthenticator

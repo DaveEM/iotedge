@@ -2,10 +2,10 @@
 namespace Microsoft.Azure.Devices.Edge.Util.Test.Common.WorkloadTestServer
 {
     using System;
-    using System.IO;
     using System.Security.Cryptography;
     using System.Text;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common.WorkloadTestServer.Controllers;
 
     class WorkloadTestImplementation : IController
@@ -35,13 +35,13 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Common.WorkloadTestServer
             return Task.FromResult(new DecryptResponse() { Plaintext = Encoding.UTF8.GetBytes(dencrypted) });
         }
 
-        public Task<CertificateResponse> CreateIdentityCertificateAsync(string api_version, string name, string genid) => throw new System.NotImplementedException();
+        public Task<CertificateResponse> CreateIdentityCertificateAsync(string api_version, string name, string genid) => throw new NotImplementedException();
 
         public Task<CertificateResponse> CreateServerCertificateAsync(string api_version, string name, string genid, ServerCertificateRequest request)
         {
             var response = new CertificateResponse()
             {
-                Certificate =  $"{CertificateHelper.CertificatePem}\n{CertificateHelper.CertificatePem}",
+                Certificate = $"{CertificateHelper.CertificatePem}\n{CertificateHelper.CertificatePem}",
                 PrivateKey = new PrivateKey()
                 {
                     Type = PrivateKeyType.Key,

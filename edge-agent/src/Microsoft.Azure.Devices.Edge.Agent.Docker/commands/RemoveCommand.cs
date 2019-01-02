@@ -5,8 +5,10 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::Docker.DotNet;
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
@@ -26,6 +28,22 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
         }
 
         public string Id => $"RemoveCommand({this.module.Name})";
+
+        public async Task ExecuteAsync(CancellationToken token)
+        {
+            var parameters = new ContainerRemoveParameters();
+            long exitCode = await this.GetModuleExitCode();
+            if (exitCode != 0)
+            {
+                await this.TailLogsAsync(exitCode);
+            }
+
+            await this.client.Containers.RemoveContainerAsync(this.module.Name, parameters, token);
+        }
+
+        public Task UndoAsync(CancellationToken token) => TaskEx.Done;
+
+        public string Show() => $"docker rm {this.module.Name}";
 
         async Task<long> GetModuleExitCode()
         {
@@ -59,6 +77,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
                                     Logger.LogError($"Last {LogLinesToPull} log lines from container {this.module.Name}:");
                                     firstLine = false;
                                 }
+
                                 string line = await reader.ReadLineAsync();
                                 Logger.LogError(line);
                             }
@@ -71,20 +90,5 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
                 Logger.LogError($"Unable to get logs from module {this.module.Name} - {ex.Message}");
             }
         }
-
-        public async Task ExecuteAsync(CancellationToken token)
-        {
-            var parameters = new ContainerRemoveParameters();
-            long exitCode = await this.GetModuleExitCode();
-            if (exitCode != 0)
-            {
-                await this.TailLogsAsync(exitCode);
-            }
-            await this.client.Containers.RemoveContainerAsync(this.module.Name, parameters, token);
-        }
-
-        public Task UndoAsync(CancellationToken token) => TaskEx.Done;
-
-        public string Show() => $"docker rm {this.module.Name}";
     }
 }

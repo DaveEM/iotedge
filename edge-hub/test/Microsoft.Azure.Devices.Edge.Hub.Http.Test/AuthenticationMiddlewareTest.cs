@@ -3,15 +3,17 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.AspNetCore.Http;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
-    using Microsoft.Azure.Devices.Edge.Hub.Http;
     using Microsoft.Azure.Devices.Edge.Hub.Http.Middleware;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Extensions.Primitives;
     using Microsoft.Net.Http.Headers;
+
     using Moq;
+
     using Xunit;
 
     [Unit]
@@ -389,6 +391,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             Assert.Equal("Request header does not contain ModuleId", result.message);
         }
 
-        public class SomeException : Exception { }
+        public class SomeException : Exception
+        {
+        }
     }
 }

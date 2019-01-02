@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util;
@@ -23,6 +24,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
             return Task.FromResult(deviceListener);
         }
 
+        public void Dispose() => this.Dispose(true);
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -30,7 +33,5 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core
                 this.edgeHub?.Dispose();
             }
         }
-
-        public void Dispose() => this.Dispose(true);
     }
 }

@@ -4,10 +4,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
     using System;
     using System.Collections.Generic;
     using System.Globalization;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+
     using Xunit;
 
     public class EdgeAgentDockerRuntimeModuleTest
@@ -34,22 +37,23 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
             JToken json = JToken.Parse(JsonConvert.SerializeObject(module));
 
             // Assert
-            JToken expected = JToken.FromObject(new
-            {
-                runtimeStatus = "running",
-                exitCode = 0,
-                lastStartTimeUtc = lastStartTimeUtc,
-                lastExitTimeUtc = lastExitTimeUtc,
-                statusDescription = "",
-                type = "docker",
-                settings = new
+            JToken expected = JToken.FromObject(
+                new
                 {
-                    image = "booyah",
-                    imageHash = "someSha",
-                    createOptions = "{}"
-                },
-                env = new { }
-            });
+                    runtimeStatus = "running",
+                    exitCode = 0,
+                    lastStartTimeUtc = lastStartTimeUtc,
+                    lastExitTimeUtc = lastExitTimeUtc,
+                    statusDescription = "",
+                    type = "docker",
+                    settings = new
+                    {
+                        image = "booyah",
+                        imageHash = "someSha",
+                        createOptions = "{}"
+                    },
+                    env = new { }
+                });
 
             Assert.True(JToken.DeepEquals(expected, json));
         }
@@ -60,20 +64,23 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
         {
             // Arrange
             DateTime lastStartTimeUtc = DateTime.Parse(
-                "2017-11-13T23:44:35.127381Z", null, DateTimeStyles.RoundtripKind
+                "2017-11-13T23:44:35.127381Z",
+                null,
+                DateTimeStyles.RoundtripKind
             );
-            string json = JsonConvert.SerializeObject(new
-            {
-                type = "docker",
-                runtimeStatus = "running",
-                settings = new
+            string json = JsonConvert.SerializeObject(
+                new
                 {
-                    image = "someImage",
-                    createOptions = "{}",
-                    imageHash = "someSha"
-                },
-                lastStartTimeUtc = lastStartTimeUtc
-            });
+                    type = "docker",
+                    runtimeStatus = "running",
+                    settings = new
+                    {
+                        image = "someImage",
+                        createOptions = "{}",
+                        imageHash = "someSha"
+                    },
+                    lastStartTimeUtc = lastStartTimeUtc
+                });
 
             // Act
             var edgeAgent = JsonConvert.DeserializeObject<EdgeAgentDockerRuntimeModule>(json);
@@ -92,21 +99,22 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
         public void TestJsonDeserialize2()
         {
             // Arrange
-            string json = JsonConvert.SerializeObject(new
-            {
-                type = "docker",
-                runtimeStatus = "running",
-                settings = new
+            string json = JsonConvert.SerializeObject(
+                new
                 {
-                    image = "someImage",
-                    createOptions = "{}",
-                    imageHash = "someSha"
-                },
-                configuration = new
-                {
-                    id = "bing"
-                }
-            });
+                    type = "docker",
+                    runtimeStatus = "running",
+                    settings = new
+                    {
+                        image = "someImage",
+                        createOptions = "{}",
+                        imageHash = "someSha"
+                    },
+                    configuration = new
+                    {
+                        id = "bing"
+                    }
+                });
 
             // Act
             var edgeAgent = JsonConvert.DeserializeObject<EdgeAgentDockerRuntimeModule>(json);

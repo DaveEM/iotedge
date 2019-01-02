@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Exceptions;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
@@ -13,9 +14,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Shared;
+
     using Moq;
+
     using Xunit;
-    using TransportType = Microsoft.Azure.Devices.Client.TransportType;
 
     [Unit]
     public class ClientTokenCloudConnectionTest
@@ -150,7 +152,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             ITokenProvider tokenProvider = null;
             IClientProvider clientProvider = GetMockDeviceClientProviderWithToken((s, a, t) => tokenProvider = a);
 
-            var transportSettings = new ITransportSettings[] { new AmqpTransportSettings(Client.TransportType.Amqp_Tcp_Only) };
+            var transportSettings = new ITransportSettings[] { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) };
 
             var receivedStatus = CloudConnectionStatus.ConnectionEstablished;
             void ConnectionStatusHandler(string id, CloudConnectionStatus status) => receivedStatus = status;
@@ -217,7 +219,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             ITokenProvider tokenProvider = null;
             IClientProvider clientProvider = GetMockDeviceClientProviderWithToken((s, a, t) => tokenProvider = a);
 
-            var transportSettings = new ITransportSettings[] { new AmqpTransportSettings(Client.TransportType.Amqp_Tcp_Only) };
+            var transportSettings = new ITransportSettings[] { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) };
 
             var receivedStatuses = new List<CloudConnectionStatus>();
             void ConnectionStatusHandler(string id, CloudConnectionStatus status) => receivedStatuses.Add(status);
@@ -313,7 +315,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             deviceClientProvider.Setup(dc => dc.Create(It.IsAny<IIdentity>(), It.IsAny<ITokenProvider>(), It.IsAny<ITransportSettings[]>()))
                 .Returns(() => GetMockedDeviceClient());
 
-            var transportSettings = new ITransportSettings[] { new AmqpTransportSettings(Client.TransportType.Amqp_Tcp_Only) };
+            var transportSettings = new ITransportSettings[] { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) };
 
             void ConnectionStatusHandler(string id, CloudConnectionStatus status)
             {

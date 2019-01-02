@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Authenticators
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Common.Security;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Cloud;
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Authenticators
 
             // Only check if the token is expired.
             bool isAuthenticated = this.TryGetSharedAccessSignature(tokenCredentials.Token, clientCredentials.Identity, out SharedAccessSignature sharedAccessSignature) &&
-                !sharedAccessSignature.IsExpired();
+                                   !sharedAccessSignature.IsExpired();
 
             Events.ReauthResult(clientCredentials, isAuthenticated);
             return Task.FromResult(isAuthenticated);

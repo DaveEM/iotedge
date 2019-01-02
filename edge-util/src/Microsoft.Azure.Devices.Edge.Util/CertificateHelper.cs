@@ -7,15 +7,20 @@ namespace Microsoft.Azure.Devices.Edge.Util
     using System.Linq;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Edged;
     using Microsoft.Azure.Devices.Edge.Util.Edged.GeneratedCode;
     using Microsoft.Extensions.Logging;
+
     using Org.BouncyCastle.Crypto;
     using Org.BouncyCastle.Crypto.Parameters;
     using Org.BouncyCastle.OpenSsl;
     using Org.BouncyCastle.Pkcs;
     using Org.BouncyCastle.Security;
+
+    using X509Certificate = Org.BouncyCastle.X509.X509Certificate;
 
     public static class CertificateHelper
     {
@@ -27,12 +32,6 @@ namespace Microsoft.Azure.Devices.Edge.Util
                 byte[] hash = sha256.ComputeHash(cert.RawData);
                 return ToHexString(hash);
             }
-        }
-
-        static string ToHexString(byte[] bytes)
-        {
-            Preconditions.CheckNotNull(bytes);
-            return BitConverter.ToString(bytes).Replace("-", string.Empty);
         }
 
         public static (IList<X509Certificate2>, Option<string>) BuildCertificateList(X509Certificate2 cert, Option<IList<X509Certificate2>> additionalCACertificates)
@@ -100,48 +99,27 @@ namespace Microsoft.Azure.Devices.Edge.Util
             }
 
             (bool, Option<string>) result = trustedCACerts.Map(
-                caList =>
-                {
-                    bool match = false;
-                    foreach (X509Certificate2 chainElement in remoteCerts)
+                    caList =>
                     {
-                        string thumbprint = GetSha256Thumbprint(chainElement);
-                        if (remoteCertificateChain.Any(cert => GetSha256Thumbprint(cert) == thumbprint) &&
-                            caList.Any(cert => GetSha256Thumbprint(cert) == thumbprint))
+                        bool match = false;
+                        foreach (X509Certificate2 chainElement in remoteCerts)
                         {
-                            match = true;
-                            break;
+                            string thumbprint = GetSha256Thumbprint(chainElement);
+                            if (remoteCertificateChain.Any(cert => GetSha256Thumbprint(cert) == thumbprint) &&
+                                caList.Any(cert => GetSha256Thumbprint(cert) == thumbprint))
+                            {
+                                match = true;
+                                break;
+                            }
                         }
-                    }
 
-                    return match
-                        ? (true, Option.None<string>())
-                        : (false, Option.Some($"Error validating cert with Subject: {remoteCertificate.SubjectName} Thumbprint: {GetSha256Thumbprint(remoteCertificate)}"));
-                })
+                        return match
+                            ? (true, Option.None<string>())
+                            : (false, Option.Some($"Error validating cert with Subject: {remoteCertificate.SubjectName} Thumbprint: {GetSha256Thumbprint(remoteCertificate)}"));
+                    })
                 .GetOrElse(() => (true, Option.None<string>()));
 
             return result;
-        }
-
-        static Option<string> GetCommonNameFromSubject(string subject)
-        {
-            Option<string> commonName = Option.None<string>();
-            string[] parts = subject.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string part in parts)
-            {
-                string partTrimed = part.Trim();
-                if (partTrimed.StartsWith("CN", StringComparison.OrdinalIgnoreCase))
-                {
-                    string[] cnParts = partTrimed.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
-                    if (cnParts.Length > 1)
-                    {
-                        commonName = Option.Some(cnParts[1].Trim());
-                    }
-                }
-            }
-
-            return commonName;
         }
 
         public static bool ValidateCommonName(X509Certificate2 certificate, string commonName)
@@ -261,7 +239,7 @@ namespace Microsoft.Azure.Devices.Edge.Util
 
         public static IEnumerable<X509Certificate2> GetCertificatesFromPem(IEnumerable<string> rawPemCerts) =>
             rawPemCerts
-                .Select(c => System.Text.Encoding.UTF8.GetBytes(c))
+                .Select(c => Encoding.UTF8.GetBytes(c))
                 .Select(c => new X509Certificate2(c))
                 .ToList();
 
@@ -383,15 +361,17 @@ namespace Microsoft.Azure.Devices.Edge.Util
             object certObject = pemReader.ReadObject();
             while (certObject != null)
             {
-                if (certObject is Org.BouncyCastle.X509.X509Certificate x509Cert)
+                if (certObject is X509Certificate x509Cert)
                 {
                     chain.Add(new X509CertificateEntry(x509Cert));
                 }
+
                 // when processing certificates generated via openssl certObject type is of AsymmetricCipherKeyPair
                 if (certObject is AsymmetricCipherKeyPair)
                 {
                     certObject = ((AsymmetricCipherKeyPair)certObject).Private;
                 }
+
                 if (certObject is RsaPrivateCrtKeyParameters)
                 {
                     keyParams = ((RsaPrivateCrtKeyParameters)certObject);
@@ -413,6 +393,33 @@ namespace Microsoft.Azure.Devices.Edge.Util
                 var cert = new X509Certificate2(p12File.ToArray());
                 return (cert, certsChain);
             }
+        }
+
+        static string ToHexString(byte[] bytes)
+        {
+            Preconditions.CheckNotNull(bytes);
+            return BitConverter.ToString(bytes).Replace("-", string.Empty);
+        }
+
+        static Option<string> GetCommonNameFromSubject(string subject)
+        {
+            Option<string> commonName = Option.None<string>();
+            string[] parts = subject.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string part in parts)
+            {
+                string partTrimed = part.Trim();
+                if (partTrimed.StartsWith("CN", StringComparison.OrdinalIgnoreCase))
+                {
+                    string[] cnParts = partTrimed.Split(new char[] { '=' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (cnParts.Length > 1)
+                    {
+                        commonName = Option.Some(cnParts[1].Trim());
+                    }
+                }
+            }
+
+            return commonName;
         }
     }
 }

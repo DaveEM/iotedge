@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     /// <summary>
@@ -163,6 +164,23 @@ namespace Microsoft.Azure.Devices.Edge.Storage
         public Task IterateBatch(int batchSize, Func<TK, TV, Task> callback, CancellationToken cancellationToken)
             => this.IterateBatch(Option.None<TK>(), batchSize, callback, cancellationToken);
 
+        public Task<bool> Contains(TK key, CancellationToken cancellationToken)
+            => this.dbStore.Contains(key.ToBytes(), cancellationToken);
+
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                this.dbStore?.Dispose();
+            }
+        }
+
         Task IterateBatch(Option<TK> startKey, int batchSize, Func<TK, TV, Task> callback, CancellationToken cancellationToken)
         {
             Preconditions.CheckRange(batchSize, 1, nameof(batchSize));
@@ -178,23 +196,6 @@ namespace Microsoft.Azure.Devices.Edge.Storage
             return startKey.Match(
                 k => this.dbStore.IterateBatch(k.ToBytes(), batchSize, DeserializingCallback, cancellationToken),
                 () => this.dbStore.IterateBatch(batchSize, DeserializingCallback, cancellationToken));
-        }
-
-        public Task<bool> Contains(TK key, CancellationToken cancellationToken)
-            => this.dbStore.Contains(key.ToBytes(), cancellationToken);
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                this.dbStore?.Dispose();
-            }
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

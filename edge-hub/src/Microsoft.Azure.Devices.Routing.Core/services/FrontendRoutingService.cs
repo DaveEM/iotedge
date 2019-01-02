@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Routing.Core;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
     using Microsoft.Azure.Devices.Routing.Core.Util.Concurrency;
     using Microsoft.Extensions.Logging;
@@ -26,10 +26,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
         readonly AtomicReference<ImmutableDictionary<string, ISink<IMessage>>> sinks;
         readonly AsyncLock sync = new AsyncLock();
 
-        ImmutableDictionary<string, INotifier> Notifiers => this.notifiers;
-
-        ImmutableDictionary<string, ISink<IMessage>> Sinks => this.sinks;
-
         public FrontendRoutingService(ISinkFactory<IMessage> sinkFactory, INotifierFactory notifierFactory)
         {
             this.sinkFactory = Preconditions.CheckNotNull(sinkFactory, nameof(sinkFactory));
@@ -39,6 +35,10 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
             this.sinks = new AtomicReference<ImmutableDictionary<string, ISink<IMessage>>>(ImmutableDictionary<string, ISink<IMessage>>.Empty);
             this.notifiers = new AtomicReference<ImmutableDictionary<string, INotifier>>(ImmutableDictionary<string, INotifier>.Empty);
         }
+
+        ImmutableDictionary<string, INotifier> Notifiers => this.notifiers;
+
+        ImmutableDictionary<string, ISink<IMessage>> Sinks => this.sinks;
 
         public Task RouteAsync(string hubName, IMessage message) => this.RouteAsync(hubName, new[] { message });
 
@@ -98,6 +98,30 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
             }
         }
 
+        static async Task CloseSinkAsync(ISink<IMessage> sink, CancellationToken token)
+        {
+            try
+            {
+                await sink.CloseAsync(token);
+            }
+            catch (Exception ex)
+            {
+                Events.SinkCloseFailed(ex);
+            }
+        }
+
+        static async Task CloseNotifierAsync(INotifier notifier, CancellationToken token)
+        {
+            try
+            {
+                await notifier.CloseAsync(token);
+            }
+            catch (Exception ex)
+            {
+                Events.NotifierCloseFailed(ex);
+            }
+        }
+
         async Task<ISink<IMessage>> GetSinkAsync(string hubName)
         {
             ISink<IMessage> sink;
@@ -126,6 +150,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
                     }
                 }
             }
+
             return sink;
         }
 
@@ -184,30 +209,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Services
             if (this.closed)
             {
                 throw new InvalidOperationException(string.Format(CultureInfo.InvariantCulture, "{0} is closed.", nameof(FrontendRoutingService)));
-            }
-        }
-
-        static async Task CloseSinkAsync(ISink<IMessage> sink, CancellationToken token)
-        {
-            try
-            {
-                await sink.CloseAsync(token);
-            }
-            catch (Exception ex)
-            {
-                Events.SinkCloseFailed(ex);
-            }
-        }
-
-        static async Task CloseNotifierAsync(INotifier notifier, CancellationToken token)
-        {
-            try
-            {
-                await notifier.CloseAsync(token);
-            }
-            catch (Exception ex)
-            {
-                Events.NotifierCloseFailed(ex);
             }
         }
 

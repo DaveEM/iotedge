@@ -2,11 +2,14 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
 {
     using System;
+
     using Microsoft.AspNetCore.Http;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]
@@ -104,9 +107,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             HttpContext httpContext = this._ContextWithRequestedSubprotocols("xyz", "abc");
 
             var listener = registry.GetListener(httpContext.WebSockets.WebSocketRequestedProtocols);
-            
+
             Assert.True(listener.HasValue);
-            listener.ForEach( l => Assert.Equal(l.SubProtocol, "xyz"));
+            listener.ForEach(l => Assert.Equal(l.SubProtocol, "xyz"));
             //Mock.Get(xyzListener).Verify(wsl => wsl.ProcessWebSocketRequestAsync(It.IsAny<WebSocket>(), It.IsAny<string>(), It.IsAny<EndPoint>(), It.IsAny<EndPoint>(), It.IsAny<string>()));
         }
 
@@ -136,10 +139,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
 
         HttpContext _ContextWithRequestedSubprotocols(params string[] subprotocols)
         {
-            return Mock.Of<HttpContext>(ctx =>
-                ctx.WebSockets == Mock.Of<WebSocketManager>(wsm =>
-                    wsm.WebSocketRequestedProtocols == subprotocols) &&
-                ctx.Response == Mock.Of<HttpResponse>());
+            return Mock.Of<HttpContext>(
+                ctx =>
+                    ctx.WebSockets == Mock.Of<WebSocketManager>(
+                        wsm =>
+                            wsm.WebSocketRequestedProtocols == subprotocols) &&
+                    ctx.Response == Mock.Of<HttpResponse>());
         }
     }
 }

@@ -2,6 +2,7 @@
 namespace MessagesAnalyzer
 {
     using System.Collections.Generic;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 

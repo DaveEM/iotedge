@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Util
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
 
     /// <summary>
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Devices.Edge.Util
             {
                 throw new ArgumentException("KeyShardCount should be > 0");
             }
+
             this.keyShardCount = keyShardCount;
             this.locks = new AsyncLock[keyShardCount];
             for (int i = 0; i < keyShardCount; i++)
@@ -33,6 +35,7 @@ namespace Microsoft.Azure.Devices.Edge.Util
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             int index = Math.Abs(key.GetHashCode() % this.keyShardCount);
             return this.locks[index];
         }

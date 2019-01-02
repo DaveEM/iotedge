@@ -1,9 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
 namespace Microsoft.Azure.Devices.Edge.Util.Test
 {
-    using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using System;
     using System.Collections.Generic;
+
+    using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Unit]
@@ -361,9 +363,9 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
                 this.Age = age;
             }
 
-            public string Name { get; }
-
             public int Age { get; }
+
+            public string Name { get; }
 
             public bool Equals(Person other) =>
                 other != null &&

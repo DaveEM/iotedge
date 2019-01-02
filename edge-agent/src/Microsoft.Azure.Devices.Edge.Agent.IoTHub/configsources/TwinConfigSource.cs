@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.ConfigSources
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Configuration;

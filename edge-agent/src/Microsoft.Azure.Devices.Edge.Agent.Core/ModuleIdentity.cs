@@ -14,14 +14,14 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
             this.Credentials = Preconditions.CheckNotNull(credentials, nameof(this.Credentials));
         }
 
-        public string IotHubHostname { get; }
-
-        public string GatewayHostname { get; }
+        public ICredentials Credentials { get; }
 
         public string DeviceId { get; }
 
-        public string ModuleId { get; }
+        public string GatewayHostname { get; }
 
-        public ICredentials Credentials { get; }
+        public string IotHubHostname { get; }
+
+        public string ModuleId { get; }
     }
 }

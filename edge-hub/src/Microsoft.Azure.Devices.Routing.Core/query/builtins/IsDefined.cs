@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
 {
     using System.Linq.Expressions;
     using System.Reflection;
+
     using Microsoft.Azure.Devices.Routing.Core.Query.Types;
 
     public class IsDefined : Builtin
@@ -65,9 +66,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
         static Expression CreateQueryValue(Expression[] args, Expression[] contextArgs)
         {
             return Expression.Call(typeof(IsDefined).GetMethod("RuntimeQueryValue", BindingFlags.NonPublic | BindingFlags.Static), args);
-        }
-
-        // ReSharper disable UnusedMember.Local
+        } // ReSharper disable UnusedMember.Local
         static Bool RuntimeString(string input) => Undefined.IsDefined(input);
 
         static Bool RuntimeDouble(double input) => Undefined.IsDefined(input);

@@ -8,14 +8,18 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::Docker.DotNet;
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Docker.Commands;
     using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Extensions.Configuration;
+
     using Moq;
+
     using Xunit;
 
     public class RuntimeInfoProviderTest
@@ -77,12 +81,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
 
                     var loggingConfig = new DockerLoggingConfig("json-file");
                     var config = new DockerConfig(Image);
-                    var module = new DockerModule(Name, "1.0", ModuleStatus.Running, Core.RestartPolicy.OnUnhealthy, config, null, null);
+                    var module = new DockerModule(Name, "1.0", ModuleStatus.Running, global::Microsoft.Azure.Devices.Edge.Agent.Core.RestartPolicy.OnUnhealthy, config, null, null);
 
-                    IConfigurationRoot configRoot = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
-                    {
-                        { "EdgeDeviceConnectionString", fakeConnectionString }
-                    }).Build();
+                    IConfigurationRoot configRoot = new ConfigurationBuilder().AddInMemoryCollection(
+                        new Dictionary<string, string>
+                        {
+                            { "EdgeDeviceConnectionString", fakeConnectionString }
+                        }).Build();
 
                     var deploymentConfigModules = new Dictionary<string, IModule> { [Name] = module };
                     var systemModules = new SystemModules(null, null);
@@ -142,12 +147,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
                     string createOptions = @"{""Env"": [ ""k1=v1"", ""k2=v2""]}";
                     var config = new DockerConfig(Image, createOptions);
                     var loggingConfig = new DockerLoggingConfig("json-file");
-                    var module = new DockerModule(Name, "1.0", ModuleStatus.Running, Core.RestartPolicy.OnUnhealthy, config, null, null);
+                    var module = new DockerModule(Name, "1.0", ModuleStatus.Running, global::Microsoft.Azure.Devices.Edge.Agent.Core.RestartPolicy.OnUnhealthy, config, null, null);
 
-                    IConfigurationRoot configRoot = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string>
-                    {
-                        { "EdgeDeviceConnectionString", fakeConnectionString }
-                    }).Build();
+                    IConfigurationRoot configRoot = new ConfigurationBuilder().AddInMemoryCollection(
+                        new Dictionary<string, string>
+                        {
+                            { "EdgeDeviceConnectionString", fakeConnectionString }
+                        }).Build();
 
                     var deploymentConfigModules = new Dictionary<string, IModule> { [Name] = module };
                     var systemModules = new SystemModules(null, null);
@@ -211,9 +217,10 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
                 Architecture = Architecture
             };
 
-            var dockerClient = Mock.Of<IDockerClient>(dc =>
-                dc.Containers == Mock.Of<IContainerOperations>(co => co.InspectContainerAsync(id, default(CancellationToken)) == Task.FromResult(inspectContainerResponse)) &&
-                dc.System == Mock.Of<ISystemOperations>(so => so.GetSystemInfoAsync(default(CancellationToken)) == Task.FromResult(systemInfoResponse)));
+            var dockerClient = Mock.Of<IDockerClient>(
+                dc =>
+                    dc.Containers == Mock.Of<IContainerOperations>(co => co.InspectContainerAsync(id, default(CancellationToken)) == Task.FromResult(inspectContainerResponse)) &&
+                    dc.System == Mock.Of<ISystemOperations>(so => so.GetSystemInfoAsync(default(CancellationToken)) == Task.FromResult(systemInfoResponse)));
 
             // Act
             ModuleRuntimeInfo module = RuntimeInfoProvider.InspectResponseToModule(inspectContainerResponse);
@@ -242,8 +249,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
                 Architecture = Architecture
             };
 
-            var dockerClient = Mock.Of<IDockerClient>(dc =>
-                dc.System == Mock.Of<ISystemOperations>(so => so.GetSystemInfoAsync(default(CancellationToken)) == Task.FromResult(systemInfoResponse)));
+            var dockerClient = Mock.Of<IDockerClient>(
+                dc =>
+                    dc.System == Mock.Of<ISystemOperations>(so => so.GetSystemInfoAsync(default(CancellationToken)) == Task.FromResult(systemInfoResponse)));
 
             var inputRuntimeInfo = new DockerRuntimeInfo("docker", new DockerRuntimeConfig("1.13", string.Empty));
 

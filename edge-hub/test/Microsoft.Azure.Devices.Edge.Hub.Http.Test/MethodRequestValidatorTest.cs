@@ -3,10 +3,13 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
 {
     using System;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+
     using Xunit;
 
     [Unit]
@@ -22,7 +25,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
             // Act / Assert
             methodRequestValidator.Validate(request);
         }
-
 
         [Theory]
         [MemberData(nameof(GetInvalidData))]
@@ -72,21 +74,21 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Test
 
         class TestClass
         {
-            [JsonProperty("prop1")]
-            public string Prop1 { get; }
-
-            [JsonProperty("prop2")]
-            public string Prop2 { get; }
-
-            [JsonProperty("obj")]
-            public TestClass NestedObj { get; }
-
             public TestClass(string prop1, string prop2, TestClass obj)
             {
                 this.Prop1 = prop1;
                 this.Prop2 = prop2;
                 this.NestedObj = obj;
             }
+
+            [JsonProperty("obj")]
+            public TestClass NestedObj { get; }
+
+            [JsonProperty("prop1")]
+            public string Prop1 { get; }
+
+            [JsonProperty("prop2")]
+            public string Prop2 { get; }
         }
     }
 }

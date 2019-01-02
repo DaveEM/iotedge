@@ -4,7 +4,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service.Modules
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Autofac;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Serde;
@@ -23,7 +25,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service.Modules
         readonly VersionInfo versionInfo;
         readonly TimeSpan configRefreshFrequency;
 
-        public TwinConfigSourceModule(string backupConfigFilePath,
+        public TwinConfigSourceModule(
+            string backupConfigFilePath,
             IConfiguration config,
             VersionInfo versionInfo,
             TimeSpan configRefreshFrequency
@@ -39,13 +42,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Service.Modules
         {
             // IEdgeAgentConnection
             builder.Register(
-                c =>
-                {
-                    var serde = c.Resolve<ISerde<DeploymentConfig>>();
-                    var deviceClientprovider = c.Resolve<IModuleClientProvider>();
-                    IEdgeAgentConnection edgeAgentConnection = new EdgeAgentConnection(deviceClientprovider, serde, this.configRefreshFrequency);
-                    return edgeAgentConnection;
-                })
+                    c =>
+                    {
+                        var serde = c.Resolve<ISerde<DeploymentConfig>>();
+                        var deviceClientprovider = c.Resolve<IModuleClientProvider>();
+                        IEdgeAgentConnection edgeAgentConnection = new EdgeAgentConnection(deviceClientprovider, serde, this.configRefreshFrequency);
+                        return edgeAgentConnection;
+                    })
                 .As<IEdgeAgentConnection>()
                 .SingleInstance();
 

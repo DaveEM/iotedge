@@ -4,8 +4,9 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test
     using System;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Edge.Util;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     public class TaskExTest

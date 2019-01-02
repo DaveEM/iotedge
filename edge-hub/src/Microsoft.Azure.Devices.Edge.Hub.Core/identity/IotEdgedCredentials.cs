@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
             this.AuthenticationType = AuthenticationType.IoTEdged;
         }
 
-        public IIdentity Identity { get; }
-
         public AuthenticationType AuthenticationType { get; }
+
+        public IIdentity Identity { get; }
 
         public string ProductInfo { get; }
     }

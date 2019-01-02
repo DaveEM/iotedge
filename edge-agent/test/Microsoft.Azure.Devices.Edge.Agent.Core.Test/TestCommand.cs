@@ -5,7 +5,9 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Xunit;
 
     public struct TestRecordType
@@ -39,16 +41,18 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 
     public class TestPlanRecorder
     {
-        public List<TestRecordType> ExecutionList { get; }
-        public List<TestRecordType> UndoList { get; }
-        public List<(TestCommandType Type, ICommand Command)> WrappedCommmandList { get; }
-
         public TestPlanRecorder()
         {
             this.ExecutionList = new List<TestRecordType>();
             this.UndoList = new List<TestRecordType>();
             this.WrappedCommmandList = new List<(TestCommandType Type, ICommand Command)>();
         }
+
+        public List<TestRecordType> ExecutionList { get; }
+
+        public List<TestRecordType> UndoList { get; }
+
+        public List<(TestCommandType Type, ICommand Command)> WrappedCommmandList { get; }
 
         public void ModuleExecuted(TestCommandType type, IModule module) => this.ExecutionList.Add(new TestRecordType(type, module));
 
@@ -59,12 +63,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 
     public class TestCommandFactory : ICommandFactory
     {
-        public Option<TestPlanRecorder> Recorder { get; }
-
         public TestCommandFactory()
         {
             this.Recorder = Option.Some(new TestPlanRecorder());
         }
+
+        public Option<TestPlanRecorder> Recorder { get; }
 
         public Task<ICommand> CreateAsync(IModuleWithIdentity module, IRuntimeInfo runtimeInfo)
         {
@@ -118,12 +122,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 
     public class TestCommandFailureFactory : ICommandFactory
     {
-        public Option<TestPlanRecorder> Recorder { get; }
-
         public TestCommandFailureFactory()
         {
             this.Recorder = Option.Some(new TestPlanRecorder());
         }
+
+        public Option<TestPlanRecorder> Recorder { get; }
 
         public Task<ICommand> CreateAsync(IModuleWithIdentity module, IRuntimeInfo runtimeInfo)
         {
@@ -176,21 +180,24 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
             return Task.FromResult(command);
         }
     }
+
     public class TestCommand : ICommand
     {
+        public bool CommandExecuted;
+        public bool CommandUndone;
         readonly Option<TestPlanRecorder> recorder;
         readonly TestCommandType type;
         readonly IModule module;
         readonly bool throwOnExecute;
-        public bool CommandExecuted;
-        public bool CommandUndone;
 
-        public TestCommand(TestCommandType type, IModule module) :
+        public TestCommand(TestCommandType type, IModule module)
+            :
             this(type, module, Option.None<TestPlanRecorder>(), false)
         {
         }
 
-        public TestCommand(TestCommandType type, IModule module, Option<TestPlanRecorder> recorder) :
+        public TestCommand(TestCommandType type, IModule module, Option<TestPlanRecorder> recorder)
+            :
             this(type, module, recorder, false)
         {
         }

@@ -62,7 +62,6 @@ namespace Microsoft.Azure.Devices.Edge.Util
             Func<string, string> keySelector
         ) => first.Except(second, new StringKeyComparer(keySelector));
 
-
         /// <summary>
         /// Converts an IEnumerable<typeparamref name="T"/> into an IEnumerable<(uint, typeparamref name="T")/>.
         /// The uint provides the current count of items.
@@ -81,11 +80,10 @@ namespace Microsoft.Azure.Devices.Edge.Util
         }
     }
 
-    internal class StringKeyComparer : IEqualityComparer<string>
+    class StringKeyComparer : IEqualityComparer<string>
     {
+        internal static readonly StringKeyComparer DefaultStringKeyComparer = new StringKeyComparer(s => s.Split(new[] { '=' }, 2)[0]);
         readonly Func<string, string> keySelector;
-
-        internal readonly static StringKeyComparer DefaultStringKeyComparer = new StringKeyComparer(s => s.Split(new[] { '=' }, 2)[0]);
 
         internal StringKeyComparer(Func<string, string> keySelector)
         {

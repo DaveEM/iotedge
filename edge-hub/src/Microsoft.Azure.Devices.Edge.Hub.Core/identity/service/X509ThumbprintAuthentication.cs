@@ -2,7 +2,9 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class X509ThumbprintAuthentication : IEquatable<X509ThumbprintAuthentication>

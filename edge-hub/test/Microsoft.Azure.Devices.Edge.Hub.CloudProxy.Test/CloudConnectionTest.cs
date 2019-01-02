@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Cloud;
@@ -11,11 +12,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Shared;
+
     using Moq;
+
     using Xunit;
+
     [Unit]
     public class CloudConnectionTest
-    {        
+    {
         [Fact]
         public async Task GetCloudConnectionForIdentityWithKeyTest()
         {
@@ -59,17 +63,18 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             var identity = Mock.Of<IIdentity>(i => i.Id == "d1");
             var transportSettings = new ITransportSettings[] { new AmqpTransportSettings(TransportType.Amqp_Tcp_Only) };
             var messageConverterProvider = new MessageConverterProvider(new Dictionary<Type, IMessageConverter> { [typeof(TwinCollection)] = Mock.Of<IMessageConverter>() });
-            await Assert.ThrowsAsync<TimeoutException>(() => CloudConnection.Create(
-                identity,
-                (_, __) => { },
-                transportSettings,
-                messageConverterProvider,
-                deviceClientProvider.Object,
-                Mock.Of<ICloudListener>(),
-                tokenProvider,
-                TimeSpan.FromMinutes(60),
-                true,
-                TimeSpan.FromSeconds(20)));
+            await Assert.ThrowsAsync<TimeoutException>(
+                () => CloudConnection.Create(
+                    identity,
+                    (_, __) => { },
+                    transportSettings,
+                    messageConverterProvider,
+                    deviceClientProvider.Object,
+                    Mock.Of<ICloudListener>(),
+                    tokenProvider,
+                    TimeSpan.FromMinutes(60),
+                    true,
+                    TimeSpan.FromSeconds(20)));
         }
 
         static IClientProvider GetMockDeviceClientProviderWithKey()

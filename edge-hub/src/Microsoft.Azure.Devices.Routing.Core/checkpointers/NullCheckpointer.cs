@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Checkpointers
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     /// <summary>
@@ -14,17 +15,17 @@ namespace Microsoft.Azure.Devices.Routing.Core.Checkpointers
     {
         public static ICheckpointer Instance { get; } = new NullCheckpointer();
 
-        public string Id => "null";
+        public bool HasOutstanding => false;
 
-        public long Offset => Checkpointer.InvalidOffset;
+        public string Id => "null";
 
         public Option<DateTime> LastFailedRevivalTime => Option.None<DateTime>();
 
-        public Option<DateTime> UnhealthySince => Option.None<DateTime>();
+        public long Offset => Checkpointer.InvalidOffset;
 
         public long Proposed => Checkpointer.InvalidOffset;
 
-        public bool HasOutstanding => false;
+        public Option<DateTime> UnhealthySince => Option.None<DateTime>();
 
         public void Propose(IMessage message)
         {

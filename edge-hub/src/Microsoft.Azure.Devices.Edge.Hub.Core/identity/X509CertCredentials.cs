@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
     using System.Collections.Generic;
     using System.Linq;
     using System.Security.Cryptography.X509Certificates;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class X509CertCredentials : ICertificateCredentials
@@ -17,14 +18,14 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
             this.ClientCertificateChain = Preconditions.CheckNotNull(clientCertificateChain, nameof(clientCertificateChain)).ToList();
         }
 
-        public IIdentity Identity { get; }
-
         public AuthenticationType AuthenticationType { get; }
-
-        public string ProductInfo { get; }
 
         public X509Certificate2 ClientCertificate { get; }
 
         public IList<X509Certificate2> ClientCertificateChain { get; }
+
+        public IIdentity Identity { get; }
+
+        public string ProductInfo { get; }
     }
 }

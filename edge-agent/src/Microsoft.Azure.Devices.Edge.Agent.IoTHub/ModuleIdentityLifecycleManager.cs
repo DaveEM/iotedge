@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub
     using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
@@ -17,7 +18,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub
         readonly string deviceId;
         readonly string gatewayHostName;
 
-        public ModuleIdentityLifecycleManager(IServiceClient serviceClient,
+        public ModuleIdentityLifecycleManager(
+            IServiceClient serviceClient,
             string iothubHostName,
             string deviceId,
             string gatewayHostName)
@@ -81,17 +83,18 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub
             ImmutableDictionary<string, Module> modulesDict = modules.ToImmutableDictionary(p => p.Id);
 
             IEnumerable<string> createIdentities = updatedModuleIdentites.Where(m => !modulesDict.ContainsKey(m));
-            IEnumerable<string> removeIdentities = removedModuleIdentites.Where(m => modulesDict.ContainsKey(m)
-                && string.Equals(modulesDict.GetValueOrDefault(m).ManagedBy, Constants.ModuleIdentityEdgeManagedByValue, StringComparison.OrdinalIgnoreCase));
+            IEnumerable<string> removeIdentities = removedModuleIdentites.Where(
+                m => modulesDict.ContainsKey(m)
+                     && string.Equals(modulesDict.GetValueOrDefault(m).ManagedBy, Constants.ModuleIdentityEdgeManagedByValue, StringComparison.OrdinalIgnoreCase));
 
             // Update any identities that don't have SAS auth type or where the keys are null (this will happen for single device deployments,
             // where the identities of modules are created, but the auth keys are not set).
             IEnumerable<Module> updateIdentities = modules.Where(
-                m => m.Authentication == null
-                    || m.Authentication.Type != AuthenticationType.Sas
-                    || m.Authentication.SymmetricKey == null
-                    || (m.Authentication.SymmetricKey.PrimaryKey == null && m.Authentication.SymmetricKey.SecondaryKey == null))
-                    .Select(
+                    m => m.Authentication == null
+                         || m.Authentication.Type != AuthenticationType.Sas
+                         || m.Authentication.SymmetricKey == null
+                         || (m.Authentication.SymmetricKey.PrimaryKey == null && m.Authentication.SymmetricKey.SecondaryKey == null))
+                .Select(
                     m =>
                     {
                         m.Authentication = new AuthenticationMechanism
@@ -104,11 +107,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub
             List<Module> updatedModulesIndentity = (await this.UpdateServiceModulesIdentityAsync(removeIdentities, createIdentities, updateIdentities)).ToList();
             ImmutableDictionary<string, Module> updatedDict = updatedModulesIndentity.ToImmutableDictionary(p => p.Id);
 
-            IEnumerable<IModuleIdentity> moduleIdentities = updatedModulesIndentity.Concat(modules.Where(p => !updatedDict.ContainsKey(p.Id))).Select(p =>
-            {
-                string connectionString = this.GetModuleConnectionString(p);
-                return new ModuleIdentity(this.iothubHostName, this.gatewayHostName, this.deviceId, p.Id, new ConnectionStringCredentials(connectionString));
-            });
+            IEnumerable<IModuleIdentity> moduleIdentities = updatedModulesIndentity.Concat(modules.Where(p => !updatedDict.ContainsKey(p.Id))).Select(
+                p =>
+                {
+                    string connectionString = this.GetModuleConnectionString(p);
+                    return new ModuleIdentity(this.iothubHostName, this.gatewayHostName, this.deviceId, p.Id, new ConnectionStringCredentials(connectionString));
+                });
             return moduleIdentities.ToImmutableDictionary(m => ModuleIdentityHelper.GetModuleName(m.ModuleId));
         }
 

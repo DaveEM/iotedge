@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core.MessageSources
 {
     using System.Globalization;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public class ModuleMessageSource : BaseMessageSource

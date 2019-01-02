@@ -8,6 +8,7 @@ namespace IotEdgeQuickstart.Details
     using System.Net.Sockets;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class HttpUris
@@ -15,12 +16,10 @@ namespace IotEdgeQuickstart.Details
         const int ManagementPort = 15580;
         const int WorkloadPort = 15581;
 
-        public string ConnectManagement { get; }
-        public string ConnectWorkload { get; }
-        public string ListenManagement { get; }
-        public string ListenWorkload { get; }
-
-        public HttpUris() : this(GetIpAddress()) {}
+        public HttpUris()
+            : this(GetIpAddress())
+        {
+        }
 
         public HttpUris(string hostname)
         {
@@ -29,6 +28,14 @@ namespace IotEdgeQuickstart.Details
             this.ListenManagement = $"http://0.0.0.0:{ManagementPort}";
             this.ListenWorkload = $"http://0.0.0.0:{WorkloadPort}";
         }
+
+        public string ConnectManagement { get; }
+
+        public string ConnectWorkload { get; }
+
+        public string ListenManagement { get; }
+
+        public string ListenWorkload { get; }
 
         static string GetIpAddress()
         {
@@ -110,7 +117,7 @@ namespace IotEdgeQuickstart.Details
                             .DefaultIfEmpty("name status")
                             .Single()
                             .Split(null as char[], StringSplitOptions.RemoveEmptyEntries)
-                            .ElementAt(1);  // second column is STATUS
+                            .ElementAt(1); // second column is STATUS
 
                         if (status == "running") break;
 
@@ -206,7 +213,6 @@ namespace IotEdgeQuickstart.Details
             this.upstreamProtocol.ForEach(upstreamProtocol => doc.ReplaceOrAdd("agent.env.UpstreamProtocol", upstreamProtocol.ToString()));
 
             string result = doc.ToString();
-
 
             FileAttributes attr = 0;
             if (File.Exists(YamlPath))

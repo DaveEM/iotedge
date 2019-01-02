@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Devices.Edge.Util;
@@ -19,21 +20,21 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
             this.Session = new EdgeAmqpSession(this.AmqpLink.Session);
         }
 
-        protected AmqpLink AmqpLink { get; }
-
-        public void SafeAddClosed(EventHandler handler) => this.AmqpLink.SafeAddClosed(handler);
-
         public bool IsReceiver => this.AmqpLink.IsReceiver;
 
         public IAmqpSession Session { get; set; }
 
+        public AmqpLinkSettings Settings => this.AmqpLink.Settings;
+
         public AmqpObjectState State => this.AmqpLink.State;
+
+        protected AmqpLink AmqpLink { get; }
+
+        public void SafeAddClosed(EventHandler handler) => this.AmqpLink.SafeAddClosed(handler);
 
         public bool IsCbsLink() => this.AmqpLink.IsReceiver
             ? ((Target)this.AmqpLink.Settings.Target).Address.ToString().StartsWith(CbsConstants.CbsAddress, StringComparison.OrdinalIgnoreCase)
             : ((Source)this.AmqpLink.Settings.Source).Address.ToString().StartsWith(CbsConstants.CbsAddress, StringComparison.OrdinalIgnoreCase);
-
-        public AmqpLinkSettings Settings => this.AmqpLink.Settings;
 
         public Task CloseAsync(TimeSpan timeout) => this.AmqpLink.CloseAsync(timeout);
     }
@@ -42,7 +43,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
     {
         public EdgeReceivingAmqpLink(ReceivingAmqpLink amqpLink)
             : base(amqpLink)
-        { }
+        {
+        }
 
         public void RegisterMessageListener(Action<AmqpMessage> onMessageReceived) => ((ReceivingAmqpLink)this.AmqpLink).RegisterMessageListener(onMessageReceived);
 
@@ -54,7 +56,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
     {
         public EdgeSendingAmqpLink(SendingAmqpLink amqpLink)
             : base(amqpLink)
-        { }
+        {
+        }
 
         public Task SendMessageAsync(AmqpMessage message, ArraySegment<byte> deliveryTag, ArraySegment<byte> txnId, TimeSpan timeout)
             => ((SendingAmqpLink)this.AmqpLink).SendMessageAsync(message, deliveryTag, txnId, timeout);

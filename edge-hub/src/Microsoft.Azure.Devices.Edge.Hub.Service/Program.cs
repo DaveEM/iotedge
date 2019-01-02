@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Service
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Autofac;
+
     using Microsoft.Azure.Devices.Edge.Hub.Amqp;
     using Microsoft.Azure.Devices.Edge.Hub.CloudProxy;
     using Microsoft.Azure.Devices.Edge.Hub.Core;

@@ -5,9 +5,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Common.Exceptions;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]

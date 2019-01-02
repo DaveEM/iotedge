@@ -13,11 +13,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity
             this.ProductInfo = productInfo ?? string.Empty;
         }
 
-        public IIdentity Identity { get; }
+        public AuthenticationType AuthenticationType { get; }
 
         public string ConnectionString { get; }
 
-        public AuthenticationType AuthenticationType { get; }
+        public IIdentity Identity { get; }
 
         public string ProductInfo { get; }
     }

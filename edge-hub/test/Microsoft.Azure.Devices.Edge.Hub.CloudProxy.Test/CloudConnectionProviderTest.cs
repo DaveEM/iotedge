@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.Devices.Client.Transport.Mqtt;
     using Microsoft.Azure.Devices.Edge.Hub.Core;
@@ -13,7 +14,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     [Unit]
@@ -27,6 +30,83 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
         const string IotHubHostName = "foo.azure-devices.net";
 
         const int ConnectionPoolSize = 10;
+
+        public static IEnumerable<object[]> UpstreamProtocolTransportSettingsData()
+        {
+            yield return new object[]
+            {
+                Option.None<UpstreamProtocol>(),
+                20,
+                new ITransportSettings[]
+                {
+                    new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
+                    {
+                        AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings
+                        {
+                            Pooling = true,
+                            MaxPoolSize = 20,
+                            ConnectionIdleTimeout = TimeSpan.FromSeconds(5)
+                        }
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                Option.Some(UpstreamProtocol.Amqp),
+                30,
+                new ITransportSettings[]
+                {
+                    new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
+                    {
+                        AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings
+                        {
+                            Pooling = true,
+                            MaxPoolSize = 30,
+                            ConnectionIdleTimeout = TimeSpan.FromSeconds(5)
+                        }
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                Option.Some(UpstreamProtocol.AmqpWs),
+                50,
+                new ITransportSettings[]
+                {
+                    new AmqpTransportSettings(TransportType.Amqp_WebSocket_Only)
+                    {
+                        AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings
+                        {
+                            Pooling = true,
+                            MaxPoolSize = 50,
+                            ConnectionIdleTimeout = TimeSpan.FromSeconds(5)
+                        }
+                    }
+                }
+            };
+
+            yield return new object[]
+            {
+                Option.Some(UpstreamProtocol.Mqtt),
+                60,
+                new ITransportSettings[]
+                {
+                    new MqttTransportSettings(TransportType.Mqtt_Tcp_Only)
+                }
+            };
+
+            yield return new object[]
+            {
+                Option.Some(UpstreamProtocol.MqttWs),
+                80,
+                new ITransportSettings[]
+                {
+                    new MqttTransportSettings(TransportType.Mqtt_WebSocket_Only)
+                }
+            };
+        }
 
         [Fact]
         public async Task ConnectUsingTokenCredentialsTest()
@@ -235,83 +315,6 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
                     Assert.True(((AmqpTransportSettings)expectedTransportSettings).Equals((AmqpTransportSettings)transportSettings));
                 }
             }
-        }
-
-        public static IEnumerable<object[]> UpstreamProtocolTransportSettingsData()
-        {
-            yield return new object[]
-            {
-                Option.None<UpstreamProtocol>(),
-                20,
-                new ITransportSettings[]
-                {
-                    new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
-                    {
-                        AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings
-                        {
-                            Pooling = true,
-                            MaxPoolSize = 20,
-                            ConnectionIdleTimeout = TimeSpan.FromSeconds(5)
-                        }
-                    }
-                }
-            };
-
-            yield return new object[]
-            {
-                Option.Some(UpstreamProtocol.Amqp),
-                30,
-                new ITransportSettings[]
-                {
-                    new AmqpTransportSettings(TransportType.Amqp_Tcp_Only)
-                    {
-                        AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings
-                        {
-                            Pooling = true,
-                            MaxPoolSize = 30,
-                            ConnectionIdleTimeout = TimeSpan.FromSeconds(5)
-                        }
-                    }
-                }
-            };
-
-            yield return new object[]
-            {
-                Option.Some(UpstreamProtocol.AmqpWs),
-                50,
-                new ITransportSettings[]
-                {
-                    new AmqpTransportSettings(TransportType.Amqp_WebSocket_Only)
-                    {
-                        AmqpConnectionPoolSettings = new AmqpConnectionPoolSettings
-                        {
-                            Pooling = true,
-                            MaxPoolSize = 50,
-                            ConnectionIdleTimeout = TimeSpan.FromSeconds(5)
-                        }
-                    }
-                }
-            };
-
-            yield return new object[]
-            {
-                Option.Some(UpstreamProtocol.Mqtt),
-                60,
-                new ITransportSettings[]
-                {
-                    new MqttTransportSettings(TransportType.Mqtt_Tcp_Only)
-                }
-            };
-
-            yield return new object[]
-            {
-                Option.Some(UpstreamProtocol.MqttWs),
-                80,
-                new ITransportSettings[]
-                {
-                    new MqttTransportSettings(TransportType.Mqtt_WebSocket_Only)
-                }
-            };
         }
 
         static IClientProvider GetMockDeviceClientProvider()

@@ -2,9 +2,10 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 {
     using System;
-    using Microsoft.Azure.Devices.Edge.Agent.Core;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Xunit;
 
     [Unit]
@@ -21,7 +22,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 
             // Act
             IModuleIdentity identity = builder.Create(moduleId, generationId, edgeletUri);
-
 
             // Assert
             Assert.Equal(iotHubHostName, identity.IotHubHostname);
@@ -47,7 +47,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
 
             // Act
             IModuleIdentity identity = builder.Create(moduleId, generationId, edgeletUri, authScheme);
-
 
             // Assert
             Assert.Equal(iotHubHostName, identity.IotHubHostname);

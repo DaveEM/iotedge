@@ -5,9 +5,9 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query
 
     public interface IArgs
     {
-        Type[] Types { get; }
-
         int Arity { get; }
+
+        Type[] Types { get; }
 
         bool Match(Type[] args, bool matchQueryValue);
     }

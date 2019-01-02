@@ -4,19 +4,20 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Sinks
     using System.Collections.Generic;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
     public class TestSink<T> : ISink<T>
     {
-        public IList<T> Processed { get; }
-
-        public bool IsClosed { get; private set; }
-
         public TestSink()
         {
             this.Processed = new List<T>();
             this.IsClosed = false;
         }
+
+        public bool IsClosed { get; private set; }
+
+        public IList<T> Processed { get; }
 
         public Task<ISinkResult<T>> ProcessAsync(T t, CancellationToken ct)
         {
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Sinks
             {
                 this.Processed.Add(t);
             }
+
             ISinkResult<T> result = new SinkResult<T>(ts);
             return Task.FromResult(result);
         }

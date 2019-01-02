@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util;
 
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http
                     return Option.Some(webSocketListener);
                 }
             }
-            
+
             return Option.None<IWebSocketListener>();
         }
 

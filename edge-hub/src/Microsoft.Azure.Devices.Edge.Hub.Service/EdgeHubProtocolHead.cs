@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Service
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;

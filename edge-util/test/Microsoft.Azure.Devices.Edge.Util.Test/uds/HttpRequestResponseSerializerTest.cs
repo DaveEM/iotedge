@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Uds
     using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Edge.Util.Uds;
+
     using Xunit;
 
     [Unit]
@@ -111,7 +113,7 @@ namespace Microsoft.Azure.Devices.Edge.Util.Test.Uds
 
             AssertNormalizedValues(expected, actual);
         }
-        
+
         [Fact]
         public void TestDeserializeResponse_InvalidEndOfStream_ShouldThrow()
         {

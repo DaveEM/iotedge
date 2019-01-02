@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Edgelet.Commands
 {
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
 

@@ -2,12 +2,15 @@
 namespace Microsoft.Azure.Devices.Edge.Agent.IoTHub.Test.ConfigSources
 {
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.IoTHub.ConfigSources;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Extensions.Configuration;
+
     using Moq;
+
     using Xunit;
 
     [Unit]

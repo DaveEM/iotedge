@@ -5,16 +5,16 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.E2E.Test
 
     public class RunCommandValidator : Validator
     {
-        public string Command { get; set; }
-
-        public string Args { get; set; }
-
-        public string OutputEquals { get; set; }
-
         public RunCommandValidator()
         {
             this.Type = ValidatorType.RunCommand;
         }
+
+        public string Args { get; set; }
+
+        public string Command { get; set; }
+
+        public string OutputEquals { get; set; }
 
         public override bool Validate()
         {

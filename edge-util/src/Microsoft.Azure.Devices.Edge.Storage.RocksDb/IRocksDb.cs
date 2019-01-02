@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Storage.RocksDb
 {
     using System;
     using System.Collections.Generic;
+
     using RocksDbSharp;
 
     interface IRocksDb : IDisposable

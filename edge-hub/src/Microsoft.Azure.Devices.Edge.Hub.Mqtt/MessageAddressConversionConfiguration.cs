@@ -2,15 +2,14 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
     using System.Collections.Generic;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class MessageAddressConversionConfiguration
     {
-        public IList<string> InboundTemplates { get; }
-        public IDictionary<string, string> OutboundTemplates { get; }
-
-        public MessageAddressConversionConfiguration() :
-           this(new List<string>(), new Dictionary<string, string>())
+        public MessageAddressConversionConfiguration()
+            :
+            this(new List<string>(), new Dictionary<string, string>())
         {
         }
 
@@ -22,5 +21,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
             this.InboundTemplates = inboundTemplates;
             this.OutboundTemplates = outboundTemplates;
         }
+
+        public IList<string> InboundTemplates { get; }
+
+        public IDictionary<string, string> OutboundTemplates { get; }
     }
 }

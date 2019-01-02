@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Devices.Routing.Core.Query.Builtins
 
     public class BuiltinExecutor
     {
-        public IArgs InputArgs { get; set; }
-
         public IArgs ContextArgs { get; set; }
 
-        public bool IsQueryValueSupported { get; set; }
-
         public Func<Expression[], Expression[], Expression> ExecutorFunc { get; set; }
+
+        public IArgs InputArgs { get; set; }
+
+        public bool IsQueryValueSupported { get; set; }
     }
 }

@@ -6,16 +6,16 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers
 
     public interface ILinkHandler
     {
-        Uri LinkUri { get; }
+        string CorrelationId { get; }
 
         IAmqpLink Link { get; }
+
+        Uri LinkUri { get; }
+
+        LinkType Type { get; }
 
         Task OpenAsync(TimeSpan timeout);
 
         Task CloseAsync(TimeSpan timeout);
-
-        string CorrelationId { get; }
-
-        LinkType Type { get; }
     }
 }

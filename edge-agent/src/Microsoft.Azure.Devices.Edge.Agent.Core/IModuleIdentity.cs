@@ -3,14 +3,14 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core
 {
     public interface IModuleIdentity
     {
-        string IotHubHostname { get; }
-
-        string GatewayHostname { get; }
+        ICredentials Credentials { get; }
 
         string DeviceId { get; }
 
-        string ModuleId { get; }
+        string GatewayHostname { get; }
 
-        ICredentials Credentials { get; }
+        string IotHubHostname { get; }
+
+        string ModuleId { get; }
     }
 }

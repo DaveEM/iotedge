@@ -3,15 +3,16 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Commands
 {
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class NullCommand : ICommand
     {
-        public static NullCommand Instance { get; } = new NullCommand();
-
         NullCommand()
         {
         }
+
+        public static NullCommand Instance { get; } = new NullCommand();
 
         public string Id => string.Empty;
 

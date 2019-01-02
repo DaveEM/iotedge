@@ -4,8 +4,10 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::Docker.DotNet;
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
 
     public static class DockerHelper
@@ -13,13 +15,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
         static readonly Lazy<IDockerClient> LazyClient = new Lazy<IDockerClient>(GetDockerClient);
 
         public static IDockerClient Client { get; } = LazyClient.Value;
-
-        static IDockerClient GetDockerClient()
-        {
-            // Build the docker host URL.
-            string dockerHostUrl = ConfigHelper.TestConfig["dockerHostUrl"];
-            return new DockerClientConfiguration(new Uri(dockerHostUrl)).CreateClient();
-        }
 
         /// <summary>
         /// Pulls specified image and ensures it is downloaded completely
@@ -75,6 +70,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
             catch (Exception)
             {
             }
+        }
+
+        static IDockerClient GetDockerClient()
+        {
+            // Build the docker host URL.
+            string dockerHostUrl = ConfigHelper.TestConfig["dockerHostUrl"];
+            return new DockerClientConfiguration(new Uri(dockerHostUrl)).CreateClient();
         }
     }
 }

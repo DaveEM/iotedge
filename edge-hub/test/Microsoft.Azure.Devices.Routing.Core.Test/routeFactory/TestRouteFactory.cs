@@ -2,7 +2,8 @@
 namespace Microsoft.Azure.Devices.Routing.Core.Test.RouteFactory
 {
     using System;
-    using Microsoft.Azure.Devices.Routing.Core;
+
+    using RouteFactory = Microsoft.Azure.Devices.Routing.Core.RouteFactory;
 
     public class TestRouteFactory : RouteFactory
     {

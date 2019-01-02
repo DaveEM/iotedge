@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Middleware
     using System.Linq;
     using System.Security.Cryptography.X509Certificates;
     using System.Threading.Tasks;
+
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Http;
     using Microsoft.Azure.Devices.Common.Security;
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Middleware
     using Microsoft.Extensions.Logging;
     using Microsoft.Extensions.Primitives;
     using Microsoft.Net.Http.Headers;
+
     using static System.FormattableString;
 
     public class AuthenticationMiddleware
@@ -74,6 +76,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Middleware
             {
                 return LogAndReturnFailure("Id header doesn't contain device Id and module Id as expected.");
             }
+
             string deviceId = clientIdParts[0];
             string moduleId = clientIdParts[1];
 
@@ -90,12 +93,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Http.Middleware
                 // Authorization header may be present in the QueryNameValuePairs as per Azure standards,
                 // So check in the query parameters first.
                 List<string> authorizationQueryParameters = context.Request.Query
-                .Where(p => p.Key.Equals(HeaderNames.Authorization, StringComparison.OrdinalIgnoreCase))
-                .SelectMany(p => p.Value)
-                .ToList();
+                    .Where(p => p.Key.Equals(HeaderNames.Authorization, StringComparison.OrdinalIgnoreCase))
+                    .SelectMany(p => p.Value)
+                    .ToList();
 
                 if (!(context.Request.Headers.TryGetValue(HeaderNames.Authorization, out StringValues authorizationHeaderValues)
-                    && authorizationQueryParameters.Count == 0))
+                      && authorizationQueryParameters.Count == 0))
                 {
                     return LogAndReturnFailure("Authorization header missing");
                 }

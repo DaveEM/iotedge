@@ -6,6 +6,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.EdgeHub
     using System.Collections.Generic;
     using System.Reflection;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Client;
     using Microsoft.Azure.WebJobs.Host.Triggers;
 

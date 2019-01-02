@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Hub.Core;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
@@ -11,9 +12,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
     using Microsoft.Azure.Devices.ProtocolGateway.Messaging;
     using Microsoft.Azure.Devices.ProtocolGateway.Mqtt;
     using Microsoft.Extensions.Logging;
+
     using static System.FormattableString;
-    using IMessage = Core.IMessage;
-    using IProtocolGatewayMessage = ProtocolGateway.Messaging.IMessage;
+
+    using IMessage = Microsoft.Azure.Devices.Edge.Hub.Core.IMessage;
+    using IProtocolGatewayMessage = Microsoft.Azure.Devices.ProtocolGateway.Messaging.IMessage;
 
     public class DeviceProxy : IDeviceProxy
     {
@@ -22,8 +25,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
         readonly AtomicBoolean isActive;
         readonly IByteBufferConverter byteBufferConverter;
 
-        public DeviceProxy(IMessagingChannel<IProtocolGatewayMessage> channel, IIdentity identity,
-            IMessageConverter<IProtocolGatewayMessage> messageConverter, IByteBufferConverter byteBufferConverter)
+        public DeviceProxy(
+            IMessagingChannel<IProtocolGatewayMessage> channel,
+            IIdentity identity,
+            IMessageConverter<IProtocolGatewayMessage> messageConverter,
+            IByteBufferConverter byteBufferConverter)
         {
             this.isActive = new AtomicBoolean(true);
             this.channel = Preconditions.CheckNotNull(channel, nameof(channel));
@@ -34,6 +40,8 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
 
         public IIdentity Identity { get; }
 
+        public bool IsActive => this.isActive.Get();
+
         public Task CloseAsync(Exception ex)
         {
             if (this.isActive.GetAndSet(false))
@@ -41,6 +49,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                 this.channel.Close(ex ?? new EdgeHubConnectionException($"Connection closed for device {this.Identity.Id}."));
                 Events.Close(this.Identity);
             }
+
             return TaskEx.Done;
         }
 
@@ -74,6 +83,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
                 this.channel.Handle(pgMessage);
                 result = true;
             }
+
             return Task.FromResult(result);
         }
 
@@ -101,13 +111,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Mqtt
         public Task OnDesiredPropertyUpdates(IMessage desiredProperties)
         {
             desiredProperties.SystemProperties[SystemProperties.OutboundUri] =
-                Constants.OutboundUriTwinDesiredPropertyUpdate;            
+                Constants.OutboundUriTwinDesiredPropertyUpdate;
             this.channel.Handle(this.messageConverter.FromMessage(desiredProperties));
             Events.SentDesiredPropertyUpdate(this.Identity);
             return Task.FromResult(true);
         }
-
-        public bool IsActive => this.isActive.Get();
 
         public Task<Option<IClientCredentials>> GetUpdatedIdentity() => Task.FromResult(Option.None<IClientCredentials>());
 

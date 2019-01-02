@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System.Collections.Generic;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Transport;
 

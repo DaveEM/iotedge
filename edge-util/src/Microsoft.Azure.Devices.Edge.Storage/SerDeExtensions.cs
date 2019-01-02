@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Storage
 {
     using System.Text;
+
     using Newtonsoft.Json;
 
     public static class SerDeExtensions

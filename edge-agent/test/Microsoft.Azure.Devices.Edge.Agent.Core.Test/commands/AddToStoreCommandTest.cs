@@ -4,10 +4,13 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.Commands
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Commands;
     using Microsoft.Azure.Devices.Edge.Storage;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
 
     public class AddToStoreCommandTest

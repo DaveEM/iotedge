@@ -3,40 +3,24 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
 {
     using System.Collections.Generic;
     using System.Collections.Immutable;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class DockerModule : IModule<DockerConfig>
     {
         static readonly DictionaryComparer<string, EnvVal> EnvDictionaryComparer = new DictionaryComparer<string, EnvVal>();
 
-        [JsonIgnore]
-        public string Name { get; set; }
-
-        [JsonProperty(PropertyName = "version")]
-        public virtual string Version { get; }
-
-        [JsonProperty(PropertyName = "status")]
-        public virtual ModuleStatus DesiredStatus { get; }
-
-        [JsonProperty(PropertyName = "restartPolicy")]
-        public virtual RestartPolicy RestartPolicy { get; }
-
-        [JsonProperty(Required = Required.Always, PropertyName = "type")]
-        public virtual string Type => "docker";
-
-        [JsonProperty(Required = Required.Always, PropertyName = "settings")]
-        public DockerConfig Config { get; }
-
-        [JsonIgnore]
-        public virtual ConfigurationInfo ConfigurationInfo { get; }
-
-        [JsonProperty(PropertyName = "env")]
-        public IDictionary<string, EnvVal> Env { get; }
-
-        public DockerModule(string name, string version, ModuleStatus desiredStatus, RestartPolicy restartPolicy,
-            DockerConfig config, ConfigurationInfo configurationInfo, IDictionary<string, EnvVal> env)
+        public DockerModule(
+            string name,
+            string version,
+            ModuleStatus desiredStatus,
+            RestartPolicy restartPolicy,
+            DockerConfig config,
+            ConfigurationInfo configurationInfo,
+            IDictionary<string, EnvVal> env)
         {
             this.Name = name;
             this.Version = version ?? string.Empty;
@@ -46,6 +30,30 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
             this.ConfigurationInfo = configurationInfo ?? new ConfigurationInfo(string.Empty);
             this.Env = env?.ToImmutableDictionary() ?? ImmutableDictionary<string, EnvVal>.Empty;
         }
+
+        [JsonProperty(Required = Required.Always, PropertyName = "settings")]
+        public DockerConfig Config { get; }
+
+        [JsonIgnore]
+        public virtual ConfigurationInfo ConfigurationInfo { get; }
+
+        [JsonProperty(PropertyName = "status")]
+        public virtual ModuleStatus DesiredStatus { get; }
+
+        [JsonProperty(PropertyName = "env")]
+        public IDictionary<string, EnvVal> Env { get; }
+
+        [JsonIgnore]
+        public string Name { get; set; }
+
+        [JsonProperty(PropertyName = "restartPolicy")]
+        public virtual RestartPolicy RestartPolicy { get; }
+
+        [JsonProperty(Required = Required.Always, PropertyName = "type")]
+        public virtual string Type => "docker";
+
+        [JsonProperty(PropertyName = "version")]
+        public virtual string Version { get; }
 
         public override bool Equals(object obj) => this.Equals(obj as DockerModule);
 
@@ -58,12 +66,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
             if (ReferenceEquals(this, other))
                 return true;
             return string.Equals(this.Name, other.Name) &&
-                string.Equals(this.Version, other.Version) &&
-                string.Equals(this.Type, other.Type) &&
-                this.DesiredStatus == other.DesiredStatus &&
-                this.Config.Equals(other.Config) &&
-                this.RestartPolicy == other.RestartPolicy &&
-                EnvDictionaryComparer.Equals(this.Env, other.Env);
+                   string.Equals(this.Version, other.Version) &&
+                   string.Equals(this.Type, other.Type) &&
+                   this.DesiredStatus == other.DesiredStatus &&
+                   this.Config.Equals(other.Config) &&
+                   this.RestartPolicy == other.RestartPolicy &&
+                   EnvDictionaryComparer.Equals(this.Env, other.Env);
         }
 
         public override int GetHashCode()

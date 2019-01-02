@@ -4,14 +4,16 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Agent.Core.Serde;
-    using Microsoft.Azure.Devices.Edge.Agent.Docker;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
-    using Xunit;
     using Newtonsoft.Json.Linq;
-    using System.Linq;
+
+    using Xunit;
 
     [ExcludeFromCodeCoverage]
     public class DockerModuleTest
@@ -34,7 +36,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
 
         const string SerializedModule = @"{""version"":""version1"",""type"":""docker"",""status"":""running"",""restartPolicy"":""on-unhealthy"",""settings"":{""image"":""image1:42"", ""createOptions"": {""HostConfig"": {""PortBindings"": {""43/udp"": [{""HostPort"": ""43""}], ""42/tcp"": [{""HostPort"": ""42""}]}}}},""configuration"":{""id"":""1""},""env"":{""Env1"": {""value"":""Val1""}}}";
 
-        static readonly JObject TestJsonInputs = JsonConvert.DeserializeObject<JObject>(@"
+        static readonly JObject TestJsonInputs = JsonConvert.DeserializeObject<JObject>(
+            @"
 {
    ""invalidEnvJson"":[
       {
@@ -334,27 +337,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
             Assert.NotEqual(Module1.GetHashCode(), Module9.GetHashCode());
         }
 
-        static IEnumerable<string> GetJsonTestCases(string subset)
-        {
-            var val = (JArray)TestJsonInputs.GetValue(subset);
-            return val.Children().Select(token => token.ToString());
-        }
-
-        static IEnumerable<object[]> GetValidJsonInputs()
-        {
-            return GetJsonTestCases("validJson").Select(s => new object[] { s });
-        }
-
-        static IEnumerable<object[]> GetExceptionJsonInputs()
-        {
-            return GetJsonTestCases("throwsException").Select(s => new object[] { s });
-        }
-
-        static IEnumerable<object[]> GetInvalidEnvJsonInputs()
-        {
-            return GetJsonTestCases("invalidEnvJson").Select(s => new object[] { s });
-        }
-
         [Theory]
         [Unit]
         [MemberData(nameof(GetValidJsonInputs))]
@@ -435,6 +417,27 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Test
         {
             Assert.Throws<JsonSerializationException>(
                 () => ModuleSerde.Instance.Deserialize<DockerModule>(inputJson));
+        }
+
+        static IEnumerable<string> GetJsonTestCases(string subset)
+        {
+            var val = (JArray)TestJsonInputs.GetValue(subset);
+            return val.Children().Select(token => token.ToString());
+        }
+
+        static IEnumerable<object[]> GetValidJsonInputs()
+        {
+            return GetJsonTestCases("validJson").Select(s => new object[] { s });
+        }
+
+        static IEnumerable<object[]> GetExceptionJsonInputs()
+        {
+            return GetJsonTestCases("throwsException").Select(s => new object[] { s });
+        }
+
+        static IEnumerable<object[]> GetInvalidEnvJsonInputs()
+        {
+            return GetJsonTestCases("invalidEnvJson").Select(s => new object[] { s });
         }
     }
 }

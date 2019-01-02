@@ -2,8 +2,10 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Json;
+
     using Newtonsoft.Json;
 
     public class ServiceAuthentication : IEquatable<ServiceAuthentication>
@@ -35,12 +37,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Core.Identity.Service
             this.X509Thumbprint = Option.Maybe(x509Thumbprint);
         }
 
-        [JsonProperty("type")]
-        public ServiceAuthenticationType Type { get; }
-
         [JsonProperty("symmetricKey")]
         [JsonConverter(typeof(OptionConverter<SymmetricKeyAuthentication>))]
         public Option<SymmetricKeyAuthentication> SymmetricKey { get; }
+
+        [JsonProperty("type")]
+        public ServiceAuthenticationType Type { get; }
 
         [JsonProperty("x509Thumbprint")]
         [JsonConverter(typeof(OptionConverter<X509ThumbprintAuthentication>))]

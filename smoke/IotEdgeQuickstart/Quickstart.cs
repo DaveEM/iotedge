@@ -1,10 +1,11 @@
 // Copyright (c) Microsoft. All rights reserved.
-// ReSharper disable ArrangeThisQualifier
 namespace IotEdgeQuickstart
 {
     using System;
     using System.Threading.Tasks;
+
     using IotEdgeQuickstart.Details;
+
     using Microsoft.Azure.Devices.Edge.Util;
 
     public class Quickstart : Details.Details
@@ -33,7 +34,8 @@ namespace IotEdgeQuickstart
             string deviceCaCerts,
             bool optimizedForPerformance,
             LogLevel runtimeLogLevel,
-            bool cleanUpExistingDeviceOnSuccess) :
+            bool cleanUpExistingDeviceOnSuccess)
+            :
             base(bootstrapper, credentials, iothubConnectionString, eventhubCompatibleEndpointWithEntityPath, upstreamProtocol, imageTag, deviceId, hostname, deploymentFileName, deviceCaCert, deviceCaPk, deviceCaCerts, optimizedForPerformance, runtimeLogLevel, cleanUpExistingDeviceOnSuccess)
         {
             this.leaveRunning = leaveRunning;
@@ -49,23 +51,23 @@ namespace IotEdgeQuickstart
             // test hub with the target condition: "NOT deviceId=''". Since this is an unlikely scenario, we won't
             // invest the effort to guard against it.
 
-            await VerifyEdgeIsNotAlreadyActive(); // don't accidentally overwrite an edge configuration on a dev machine
-            await VerifyBootstrapperDependencies();
-            await InstallBootstrapper();
+            await this.VerifyEdgeIsNotAlreadyActive(); // don't accidentally overwrite an edge configuration on a dev machine
+            await this.VerifyBootstrapperDependencies();
+            await this.InstallBootstrapper();
 
             try
             {
-                await GetOrCreateEdgeDeviceIdentity();
-                await ConfigureBootstrapper();
+                await this.GetOrCreateEdgeDeviceIdentity();
+                await this.ConfigureBootstrapper();
 
                 try
                 {
-                    await StartBootstrapper();
-                    await VerifyEdgeAgentIsRunning();
-                    await VerifyEdgeAgentIsConnectedToIotHub();
+                    await this.StartBootstrapper();
+                    await this.VerifyEdgeAgentIsRunning();
+                    await this.VerifyEdgeAgentIsConnectedToIotHub();
                     if (!this.noDeployment)
                     {
-                        await DeployToEdgeDevice();
+                        await this.DeployToEdgeDevice();
                         if (!this.noVerify)
                         {
                             await this.VerifyDataOnIoTHub(this.verifyDataFromModule);
@@ -73,23 +75,23 @@ namespace IotEdgeQuickstart
 
                         if (this.leaveRunning == LeaveRunning.Core)
                         {
-                            await RemoveTempSensorFromEdgeDevice();
+                            await this.RemoveTempSensorFromEdgeDevice();
                         }
                     }
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Console.WriteLine("** Oops, there was a problem. We'll stop the IoT Edge runtime, but we'll leave it configured so you can investigate.");
                     Console.WriteLine($"Exception: {e}");
-                    KeepEdgeDeviceIdentity();
-                    await StopBootstrapper();
+                    this.KeepEdgeDeviceIdentity();
+                    await this.StopBootstrapper();
                     throw;
                 }
 
                 if (this.leaveRunning == LeaveRunning.None)
                 {
-                    await StopBootstrapper();
-                    await ResetBootstrapper();
+                    await this.StopBootstrapper();
+                    await this.ResetBootstrapper();
                 }
             }
             finally
@@ -97,7 +99,7 @@ namespace IotEdgeQuickstart
                 if (this.leaveRunning == LeaveRunning.None)
                 {
                     // only remove the identity if we created it; if it already existed in IoT Hub then leave it alone
-                    await MaybeDeleteEdgeDeviceIdentity();
+                    await this.MaybeDeleteEdgeDeviceIdentity();
                 }
             }
         }

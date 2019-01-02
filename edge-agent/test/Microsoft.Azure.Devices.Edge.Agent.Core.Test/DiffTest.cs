@@ -4,9 +4,12 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Serde;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Newtonsoft.Json;
+
     using Xunit;
 
     public class DiffTest
@@ -23,7 +26,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
         public void TestEquals()
         {
             Diff nonEmptyUpdated = Diff.Create(Module1);
-            var nonEmptyRemoved = new Diff(ImmutableList<IModule>.Empty, new List<string>{"module2"});
+            var nonEmptyRemoved = new Diff(ImmutableList<IModule>.Empty, new List<string> { "module2" });
             Diff alsoNonEmptyDiff = nonEmptyUpdated;
             object nonEmptyUpdatedObjectSameReference = nonEmptyUpdated;
 
@@ -36,7 +39,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
             Assert.False(Diff.Empty.Equals(nonEmptyRemoved));
             Assert.False(nonEmptyUpdated.Equals(nonEmptyRemoved));
 
-            Assert.Equal(Module1,Module1A);
+            Assert.Equal(Module1, Module1A);
             Assert.True(nonEmptyUpdated.Equals(Diff.Create(Module1A)));
         }
 
@@ -44,8 +47,8 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
         [Unit]
         public void TestDiffUnordered()
         {
-            var diff1 = new Diff(new List<IModule>{ Module1, Module2}, new List<string> {"mod3", "mod4"});
-            var diff2 = new Diff(new List<IModule>{ Module2, Module1}, new List<string> {"mod4", "mod3"});
+            var diff1 = new Diff(new List<IModule> { Module1, Module2 }, new List<string> { "mod3", "mod4" });
+            var diff2 = new Diff(new List<IModule> { Module2, Module1 }, new List<string> { "mod4", "mod3" });
 
             Assert.Equal(diff1, diff2);
         }
@@ -54,7 +57,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
         [Unit]
         public void TestDiffHash()
         {
-            var diff1 = new Diff(new List<IModule>{ Module1, Module2}, new List<string> {"mod3", "mod4"});
+            var diff1 = new Diff(new List<IModule> { Module1, Module2 }, new List<string> { "mod3", "mod4" });
             var diff2 = new Diff(new List<IModule> { Module2, Module1 }, new List<string> { "mod4", "mod3" });
             var diff3 = new Diff(new List<IModule> { Module1A, Module2 }, new List<string> { "mod3", "mod4" });
             var diff4 = new Diff(new List<IModule> { Module1 }, new List<string> { "mod3" });
@@ -70,10 +73,10 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
             int hash6 = diff6.GetHashCode();
             int hash7 = diff7.GetHashCode();
 
-            Assert.Equal(hash1,hash2);
-            Assert.Equal(hash1,hash3);
-            Assert.NotEqual(hash4,hash5);
-            Assert.NotEqual(hash6,hash7);
+            Assert.Equal(hash1, hash2);
+            Assert.Equal(hash1, hash3);
+            Assert.NotEqual(hash4, hash5);
+            Assert.NotEqual(hash6, hash7);
         }
 
         [Fact]
@@ -101,6 +104,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
             //assert
             Assert.Throws<NotSupportedException>(() => diffSerde.Serialize(nonEmptyUpdated));
         }
+
         [Fact]
         [Unit]
         public void TestDiffDeserialize()
@@ -129,7 +133,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test
             Assert.Throws<JsonSerializationException>(() => diffSerde.Deserialize(noTypeDiffJson));
             Assert.True(nonEmptyUpdatedDeserialized.Equals(nonEmptyUpdated));
             Assert.True(nonEmptyRemovedDeserialized.Equals(nonEmptyRemoved));
-
         }
     }
 }

@@ -6,6 +6,7 @@ namespace IotEdgeQuickstart.Details
     using System.Diagnostics;
     using System.Threading;
     using System.Threading.Tasks;
+
     using RunProcessAsTask;
 
     public class Process

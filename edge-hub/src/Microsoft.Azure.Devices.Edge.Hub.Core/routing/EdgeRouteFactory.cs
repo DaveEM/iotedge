@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Edge.Hub.Core.Routing
 {
     using System;
+
     using Microsoft.Azure.Devices.Routing.Core;
 
     public class EdgeRouteFactory : RouteFactory

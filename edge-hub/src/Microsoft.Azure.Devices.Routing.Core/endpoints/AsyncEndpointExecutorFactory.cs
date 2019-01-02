@@ -2,6 +2,7 @@
 namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
 {
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Routing.Core.Checkpointers;
     using Microsoft.Azure.Devices.Routing.Core.Util;
 
@@ -32,6 +33,6 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
         {
             IEndpointExecutor executor = new AsyncEndpointExecutor(endpoint, checkpointer, endpointExecutorConfig, this.options);
             return Task.FromResult(executor);
-        }        
+        }
     }
 }

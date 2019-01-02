@@ -4,13 +4,16 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Util
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Routing.Core.Util;
+
     using Xunit;
 
     public class TaskExTest
     {
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task SmokeTest()
         {
             Task t1 = TaskEx.FromException(new ApplicationException("the message"));
@@ -24,7 +27,8 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Util
             Assert.Equal("there's a bad image", e2.Message);
         }
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task WhenCancelled()
         {
             var cts = new CancellationTokenSource();

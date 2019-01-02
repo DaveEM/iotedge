@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Planners
     using System.Collections.Immutable;
     using System.Linq;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Commands;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Extensions.Logging;
@@ -25,7 +26,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Planners
             this.commandFactory = Preconditions.CheckNotNull(commandFactory, nameof(commandFactory));
         }
 
-        async public Task<Plan> PlanAsync(ModuleSet desired, ModuleSet current, IRuntimeInfo runtimeInfo, IImmutableDictionary<string, IModuleIdentity> moduleIdentities)
+        public async Task<Plan> PlanAsync(ModuleSet desired, ModuleSet current, IRuntimeInfo runtimeInfo, IImmutableDictionary<string, IModuleIdentity> moduleIdentities)
         {
             Diff diff = desired.Diff(current);
             Plan plan = diff.IsEmpty
@@ -33,6 +34,17 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Planners
                 : await this.CreatePlan(desired, current, diff, runtimeInfo, moduleIdentities);
 
             return plan;
+        }
+
+        public async Task<Plan> CreateShutdownPlanAsync(ModuleSet current)
+        {
+            IEnumerable<Task<ICommand>> stopTasks = current.Modules.Values
+                .Where(c => !c.Name.Equals(Constants.EdgeAgentModuleName, StringComparison.OrdinalIgnoreCase))
+                .Select(m => this.commandFactory.StopAsync(m));
+            ICommand[] stopCommands = await Task.WhenAll(stopTasks);
+            ICommand parallelCommand = new ParallelGroupCommand(stopCommands);
+            Events.ShutdownPlanCreated(stopCommands);
+            return new Plan(new[] { parallelCommand });
         }
 
         async Task<Plan> CreatePlan(ModuleSet desired, ModuleSet current, Diff diff, IRuntimeInfo runtimeInfo, IImmutableDictionary<string, IModuleIdentity> moduleIdentities)
@@ -59,17 +71,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Planners
 
             Events.PlanCreated(commands);
             return new Plan(commands);
-        }
-
-        public async Task<Plan> CreateShutdownPlanAsync(ModuleSet current)
-        {
-            IEnumerable<Task<ICommand>> stopTasks = current.Modules.Values
-                .Where(c => !c.Name.Equals(Constants.EdgeAgentModuleName, StringComparison.OrdinalIgnoreCase))
-                .Select(m => this.commandFactory.StopAsync(m));
-            ICommand[] stopCommands = await Task.WhenAll(stopTasks);
-            ICommand parallelCommand = new ParallelGroupCommand(stopCommands);
-            Events.ShutdownPlanCreated(stopCommands);
-            return new Plan(new[] { parallelCommand });
         }
 
         async Task<ICommand> CreateOrUpdate(ModuleSet current, IModule desiredMod, IRuntimeInfo runtimeInfo, IImmutableDictionary<string, IModuleIdentity> moduleIdentities) =>

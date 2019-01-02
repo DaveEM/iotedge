@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
     using System;
     using System.IO;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Serde;
     using Microsoft.Azure.Devices.Edge.Util;
     using Microsoft.Azure.Devices.Edge.Util.Concurrency;
@@ -30,6 +31,36 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
         }
 
         public IConfiguration Configuration => this.underlying.Configuration;
+
+        public async Task<DeploymentConfigInfo> GetDeploymentConfigInfoAsync()
+        {
+            try
+            {
+                DeploymentConfigInfo deploymentConfig = await this.underlying.GetDeploymentConfigInfoAsync();
+                if (deploymentConfig == DeploymentConfigInfo.Empty)
+                {
+                    Events.RestoringFromBackup(deploymentConfig, this.configFilePath);
+                    deploymentConfig = await this.ReadFromBackup();
+                }
+                else if (!deploymentConfig.Exception.HasValue)
+                {
+                    // TODO - Backing up the config every time for now, probably should optimize this.
+                    await this.BackupDeploymentConfig(deploymentConfig);
+                }
+
+                return deploymentConfig;
+            }
+            catch (Exception ex)
+            {
+                Events.RestoringFromBackup(ex, this.configFilePath);
+                return await this.ReadFromBackup();
+            }
+        }
+
+        public void Dispose()
+        {
+            this.underlying?.Dispose();
+        }
 
         async Task<DeploymentConfigInfo> ReadFromBackup()
         {
@@ -90,36 +121,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.ConfigSources
             {
                 Events.SetBackupFailed(e, this.configFilePath);
             }
-        }
-
-        public async Task<DeploymentConfigInfo> GetDeploymentConfigInfoAsync()
-        {
-            try
-            {
-                DeploymentConfigInfo deploymentConfig = await this.underlying.GetDeploymentConfigInfoAsync();
-                if (deploymentConfig == DeploymentConfigInfo.Empty)
-                {
-                    Events.RestoringFromBackup(deploymentConfig, this.configFilePath);
-                    deploymentConfig = await this.ReadFromBackup();
-                }
-                else if (!deploymentConfig.Exception.HasValue)
-                {
-                    // TODO - Backing up the config every time for now, probably should optimize this.
-                    await this.BackupDeploymentConfig(deploymentConfig);
-                }
-
-                return deploymentConfig;
-            }
-            catch (Exception ex)
-            {
-                Events.RestoringFromBackup(ex, this.configFilePath);
-                return await this.ReadFromBackup();
-            }
-        }
-
-        public void Dispose()
-        {
-            this.underlying?.Dispose();
         }
 
         static class Events

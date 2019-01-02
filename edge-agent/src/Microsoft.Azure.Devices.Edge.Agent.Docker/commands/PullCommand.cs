@@ -3,13 +3,15 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
 {
     using System;
     using System.Linq;
+    using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+
     using global::Docker.DotNet;
     using global::Docker.DotNet.Models;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core;
     using Microsoft.Azure.Devices.Edge.Util;
-    using System.Net;
 
     public class PullCommand : ICommand
     {
@@ -39,6 +41,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
                 image = imageParts[0];
                 tag = string.Empty;
             }
+
             var pullParameters = new ImagesCreateParameters
             {
                 FromImage = image,
@@ -47,10 +50,11 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
 
             try
             {
-                await this.client.Images.CreateImageAsync(pullParameters,
-                                                          this.combinedDockerConfig.AuthConfig.OrDefault(),
-                                                          new Progress<JSONMessage>(),
-                                                          token);
+                await this.client.Images.CreateImageAsync(
+                    pullParameters,
+                    this.combinedDockerConfig.AuthConfig.OrDefault(),
+                    new Progress<JSONMessage>(),
+                    token);
             }
             catch (DockerApiException ex)
             {
@@ -62,6 +66,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker.Commands
                 {
                     throw new InternalServerErrorException(image, tag, ex.StatusCode.ToString(), ex);
                 }
+
                 //otherwise throw
                 throw;
             }

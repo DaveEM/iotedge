@@ -3,6 +3,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
 {
     using System;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
 
@@ -12,17 +13,17 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp
     /// </summary>
     public interface IAmqpLink
     {
-        void SafeAddClosed(EventHandler handler);
-
         bool IsReceiver { get; }
 
         IAmqpSession Session { get; set; }
 
+        AmqpLinkSettings Settings { get; }
+
         AmqpObjectState State { get; }
 
-        bool IsCbsLink();
+        void SafeAddClosed(EventHandler handler);
 
-        AmqpLinkSettings Settings { get; }
+        bool IsCbsLink();
 
         Task CloseAsync(TimeSpan timeout);
     }

@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.EventHubs;
 
     public class EventHubReceiver
@@ -22,9 +23,9 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
             foreach (string partition in rtInfo.PartitionIds)
             {
                 PartitionReceiver partitionReceiver = this.eventHubClient.CreateReceiver(
-                        PartitionReceiver.DefaultConsumerGroupName,
-                        partition,
-                        startTime);
+                    PartitionReceiver.DefaultConsumerGroupName,
+                    partition,
+                    startTime);
 
                 // Retry a few times to make sure we get all expected messages.
                 for (int i = 0; i < 3; i++)
@@ -40,8 +41,10 @@ namespace Microsoft.Azure.Devices.Edge.Hub.CloudProxy.Test
                         await Task.Delay(TimeSpan.FromSeconds(5));
                     }
                 }
+
                 await partitionReceiver.CloseAsync();
             }
+
             return messages;
         }
 

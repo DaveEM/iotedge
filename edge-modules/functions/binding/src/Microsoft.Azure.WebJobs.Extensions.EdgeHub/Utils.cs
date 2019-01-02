@@ -4,6 +4,7 @@ namespace Microsoft.Azure.WebJobs.Extensions.EdgeHub
     using System;
     using System.Collections.Generic;
     using System.Linq;
+
     using Microsoft.Azure.Devices.Client;
 
     static class Utils
@@ -23,6 +24,6 @@ namespace Microsoft.Azure.WebJobs.Extensions.EdgeHub
         public static bool HasTimeoutException(this Exception ex) =>
             ex != null &&
             (ex is TimeoutException || HasTimeoutException(ex.InnerException) ||
-                (ex is AggregateException argEx && (argEx.InnerExceptions?.Select(e => HasTimeoutException(e)).Any(e => e) ?? false)));
+             (ex is AggregateException argEx && (argEx.InnerExceptions?.Select(e => HasTimeoutException(e)).Any(e => e) ?? false)));
     }
 }

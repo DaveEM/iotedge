@@ -2,18 +2,11 @@
 namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
 {
     using System;
+
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
 
     public class EndpointExecutorConfig
     {
-        public TimeSpan Timeout { get; }
-
-        public TimeSpan RevivePeriod { get; }
-
-        public RetryStrategy RetryStrategy { get; }
-
-        public bool ThrowOnDead { get; }
-
         public EndpointExecutorConfig(TimeSpan timeout, RetryStrategy retryStrategy, TimeSpan revivePeriod)
             : this(timeout, retryStrategy, revivePeriod, false)
         {
@@ -33,5 +26,13 @@ namespace Microsoft.Azure.Devices.Routing.Core.Endpoints
             this.RevivePeriod = revivePeriod;
             this.ThrowOnDead = throwOnDead;
         }
+
+        public RetryStrategy RetryStrategy { get; }
+
+        public TimeSpan RevivePeriod { get; }
+
+        public bool ThrowOnDead { get; }
+
+        public TimeSpan Timeout { get; }
     }
 }

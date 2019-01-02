@@ -4,6 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Amqp;
     using Microsoft.Azure.Amqp.Framing;
     using Microsoft.Azure.Devices.Edge.Hub.Amqp.LinkHandlers;
@@ -11,8 +12,12 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
     using Microsoft.Azure.Devices.Edge.Hub.Core.Device;
     using Microsoft.Azure.Devices.Edge.Hub.Core.Identity;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
+
     using Moq;
+
     using Xunit;
+
+    using Constants = Microsoft.Azure.Devices.Edge.Hub.Amqp.Constants;
 
     [Unit]
     public class ReceivingLinkHandlerTest
@@ -43,7 +48,7 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
 
             // Act
             var receivingLinkHandler = new TestReceivingLinkHandler(identity, receivingLink, requestUri, boundVariables, connectionHandler, messageConverter);
-            await receivingLinkHandler.OpenAsync(Amqp.Constants.DefaultTimeout);
+            await receivingLinkHandler.OpenAsync(Constants.DefaultTimeout);
             await receivingLinkHandler.ProcessMessageAsync(message);
 
             // Assert
@@ -66,11 +71,11 @@ namespace Microsoft.Azure.Devices.Edge.Hub.Amqp.Test
         {
         }
 
+        public IList<AmqpMessage> ReceivedMessages { get; } = new List<AmqpMessage>();
+
         public override LinkType Type => LinkType.Events;
 
         protected override QualityOfService QualityOfService => QualityOfService.AtLeastOnce;
-
-        public IList<AmqpMessage> ReceivedMessages { get; } = new List<AmqpMessage>();
 
         protected override Task OnMessageReceived(AmqpMessage amqpMessage)
         {

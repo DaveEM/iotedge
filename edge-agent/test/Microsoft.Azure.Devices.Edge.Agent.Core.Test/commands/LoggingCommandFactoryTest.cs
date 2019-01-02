@@ -6,21 +6,25 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.commands
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Agent.Core.Commands;
-    using Moq;
-    using Xunit;
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Extensions.Logging;
+
+    using Moq;
+
+    using Xunit;
+
     using CommandMethodExpr = System.Linq.Expressions.Expression<System.Func<ICommandFactory, System.Threading.Tasks.Task<ICommand>>>;
     using TestExecutionExpr = System.Func<LoggingCommandFactory, System.Threading.Tasks.Task<ICommand>>;
 
     class FailureCommand : ICommand
     {
-        public static FailureCommand Instance { get; } = new FailureCommand();
-
         FailureCommand()
         {
         }
+
+        public static FailureCommand Instance { get; } = new FailureCommand();
 
         public string Id => this.Show();
 
@@ -38,7 +42,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.commands
         static readonly TestModule TestModule = new TestModule("module", "version", "test", ModuleStatus.Running, new TestConfig("image"), RestartPolicy.OnUnhealthy, DefaultConfigurationInfo, EnvVars);
         static readonly TestModule UpdateModule = new TestModule("module", "version", "test", ModuleStatus.Running, new TestConfig("image"), RestartPolicy.OnUnhealthy, DefaultConfigurationInfo, EnvVars);
         static readonly TestCommand WrapTargetCommand = new TestCommand(TestCommandType.TestCreate, TestModule);
-
 
         [Fact]
         [Unit]
@@ -69,58 +72,6 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.commands
             ICommand create = await factory.CreateAsync(new ModuleWithIdentity(TestModule, moduleIdentity.Object), runtimeInfo);
 
             Assert.Equal(create.Show(), nullCmd.Result.Show());
-
-        }
-
-        static IEnumerable<object[]> CreateTestData()
-        {
-            var moduleIdentity = new Mock<IModuleIdentity>();
-            var testModule = new ModuleWithIdentity(TestModule, moduleIdentity.Object);
-            var updateModule = new ModuleWithIdentity(UpdateModule, moduleIdentity.Object);
-            var runtimeInfo = Mock.Of<IRuntimeInfo>();
-            // CommandMethodBeingTested - factory command under test
-            // Command - command object to be mocked.
-            // TestExpr - the expression to execute test.
-            (CommandMethodExpr CommandMethodBeingTested, Task<ICommand> Command, TestExecutionExpr TestExpr)[] testInputRecords = {
-                (
-                    f => f.CreateAsync(testModule, runtimeInfo),
-                    NullCommandFactory.Instance.CreateAsync(testModule, runtimeInfo),
-                    factory => factory.CreateAsync(testModule, runtimeInfo)
-                ),
-                (
-                    f => f.UpdateAsync(TestModule, updateModule, runtimeInfo),
-                    NullCommandFactory.Instance.UpdateAsync(TestModule, updateModule, runtimeInfo),
-                    factory => factory.UpdateAsync(TestModule, updateModule, runtimeInfo)
-                ),
-                (
-                    f => f.RemoveAsync(TestModule),
-                    NullCommandFactory.Instance.RemoveAsync(TestModule),
-                    factory => factory.RemoveAsync(TestModule)
-                ),
-                (
-                    f => f.StartAsync(TestModule),
-                    NullCommandFactory.Instance.StartAsync(TestModule),
-                    factory => factory.StartAsync(TestModule)
-                ),
-                (
-                    f => f.StopAsync(TestModule),
-                    NullCommandFactory.Instance.StopAsync(TestModule),
-                    factory => factory.StopAsync(TestModule)
-                ),
-
-                (
-                    f => f.RestartAsync(TestModule),
-                    NullCommandFactory.Instance.RestartAsync(TestModule),
-                    factory => factory.RestartAsync(TestModule)
-                ),
-                (
-                    f => f.WrapAsync(WrapTargetCommand),
-                    Task.FromResult<ICommand>(WrapTargetCommand),
-                    factory => factory.WrapAsync(WrapTargetCommand)
-                )
-            };
-
-            return testInputRecords.Select(r => new object[] { r.CommandMethodBeingTested, r.Command, r.TestExpr }).AsEnumerable();
         }
 
         [Theory]
@@ -251,6 +202,58 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Core.Test.commands
             factoryMock.Verify(commandMethodBeingTested);
             logMock.Verify(l => l.Log(LogLevel.Information, It.IsAny<EventId>(), It.IsAny<object>(), It.IsAny<Exception>(), It.IsAny<Func<object, Exception, string>>()), Times.Once);
             logMock.Verify(l => l.Log(LogLevel.Error, It.IsAny<EventId>(), It.IsAny<object>(), It.IsAny<Exception>(), It.IsAny<Func<object, Exception, string>>()), Times.Once);
+        }
+
+        static IEnumerable<object[]> CreateTestData()
+        {
+            var moduleIdentity = new Mock<IModuleIdentity>();
+            var testModule = new ModuleWithIdentity(TestModule, moduleIdentity.Object);
+            var updateModule = new ModuleWithIdentity(UpdateModule, moduleIdentity.Object);
+            var runtimeInfo = Mock.Of<IRuntimeInfo>();
+            // CommandMethodBeingTested - factory command under test
+            // Command - command object to be mocked.
+            // TestExpr - the expression to execute test.
+            (CommandMethodExpr CommandMethodBeingTested, Task<ICommand> Command, TestExecutionExpr TestExpr)[] testInputRecords =
+            {
+                (
+                    f => f.CreateAsync(testModule, runtimeInfo),
+                    NullCommandFactory.Instance.CreateAsync(testModule, runtimeInfo),
+                    factory => factory.CreateAsync(testModule, runtimeInfo)
+                ),
+                (
+                    f => f.UpdateAsync(TestModule, updateModule, runtimeInfo),
+                    NullCommandFactory.Instance.UpdateAsync(TestModule, updateModule, runtimeInfo),
+                    factory => factory.UpdateAsync(TestModule, updateModule, runtimeInfo)
+                ),
+                (
+                    f => f.RemoveAsync(TestModule),
+                    NullCommandFactory.Instance.RemoveAsync(TestModule),
+                    factory => factory.RemoveAsync(TestModule)
+                ),
+                (
+                    f => f.StartAsync(TestModule),
+                    NullCommandFactory.Instance.StartAsync(TestModule),
+                    factory => factory.StartAsync(TestModule)
+                ),
+                (
+                    f => f.StopAsync(TestModule),
+                    NullCommandFactory.Instance.StopAsync(TestModule),
+                    factory => factory.StopAsync(TestModule)
+                ),
+
+                (
+                    f => f.RestartAsync(TestModule),
+                    NullCommandFactory.Instance.RestartAsync(TestModule),
+                    factory => factory.RestartAsync(TestModule)
+                ),
+                (
+                    f => f.WrapAsync(WrapTargetCommand),
+                    Task.FromResult<ICommand>(WrapTargetCommand),
+                    factory => factory.WrapAsync(WrapTargetCommand)
+                )
+            };
+
+            return testInputRecords.Select(r => new object[] { r.CommandMethodBeingTested, r.Command, r.TestExpr }).AsEnumerable();
         }
     }
 }

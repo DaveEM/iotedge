@@ -6,20 +6,16 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
+
     using Microsoft.Azure.Devices.Edge.Util.Test.Common;
     using Microsoft.Azure.Devices.Edge.Util.TransientFaultHandling;
-    using Microsoft.Azure.Devices.Routing.Core.Util;
     using Microsoft.Azure.Devices.Routing.Core.MessageSources;
+    using Microsoft.Azure.Devices.Routing.Core.Util;
+
     using Xunit;
 
     class RevivableEndpoint : Endpoint
     {
-        public IList<IMessage> Processed { get; }
-
-        public Exception Exception { get; }
-
-        public bool Failing { get; set; }
-
         public RevivableEndpoint(string id)
             : this(id, new Exception())
         {
@@ -38,6 +34,12 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             this.Failing = false;
         }
 
+        public Exception Exception { get; }
+
+        public bool Failing { get; set; }
+
+        public IList<IMessage> Processed { get; }
+
         public override string Type => nameof(RevivableEndpoint);
 
         public override void LogUserMetrics(long messageCount, long latencyInMs)
@@ -50,14 +52,14 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
         {
             readonly RevivableEndpoint endpoint;
 
-            public Endpoint Endpoint => this.endpoint;
-
-            public ITransientErrorDetectionStrategy ErrorDetectionStrategy => new ErrorDetectionStrategy(_ => true );
-
             public Processor(RevivableEndpoint endpoint)
             {
                 this.endpoint = endpoint;
             }
+
+            public Endpoint Endpoint => this.endpoint;
+
+            public ITransientErrorDetectionStrategy ErrorDetectionStrategy => new ErrorDetectionStrategy(_ => true);
 
             public Task<ISinkResult<IMessage>> ProcessAsync(IMessage message, CancellationToken token) =>
                 this.ProcessAsync(new[] { message }, token);
@@ -78,6 +80,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
 
                     result = new SinkResult<IMessage>(messages);
                 }
+
                 return Task.FromResult(result);
             }
 
@@ -88,11 +91,12 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
     [ExcludeFromCodeCoverage]
     public class RevivableEndpointTest : RoutingUnitTestBase
     {
-        static readonly IMessage Message1 = new Message(TelemetryMessageSource.Instance, new byte[] {1, 2, 3}, new Dictionary<string, string> { {"key1", "value1"}, {"key2", "value2"} });
-        static readonly IMessage Message2 = new Message(TelemetryMessageSource.Instance, new byte[] {2, 3, 1}, new Dictionary<string, string> { {"key1", "value1"}, {"key2", "value2"} });
-        static readonly IMessage Message3 = new Message(TelemetryMessageSource.Instance, new byte[] {3, 1, 2}, new Dictionary<string, string> { {"key1", "value1"}, {"key2", "value2"} });
+        static readonly IMessage Message1 = new Message(TelemetryMessageSource.Instance, new byte[] { 1, 2, 3 }, new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } });
+        static readonly IMessage Message2 = new Message(TelemetryMessageSource.Instance, new byte[] { 2, 3, 1 }, new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } });
+        static readonly IMessage Message3 = new Message(TelemetryMessageSource.Instance, new byte[] { 3, 1, 2 }, new Dictionary<string, string> { { "key1", "value1" }, { "key2", "value2" } });
 
-        [Fact, Unit]
+        [Fact]
+        [Unit]
         public async Task SmokeTest()
         {
             var endpoint = new RevivableEndpoint("id1");
@@ -108,7 +112,7 @@ namespace Microsoft.Azure.Devices.Routing.Core.Test.Endpoints
             Assert.Equal(new IMessage[0], result.Succeeded);
             Assert.Equal(new List<IMessage>(), endpoint.Processed);
 
-            IMessage[] messages =  new[] { Message1, Message2, Message3 };
+            IMessage[] messages = new[] { Message1, Message2, Message3 };
             ISinkResult<IMessage> result2 = await processor.ProcessAsync(messages, CancellationToken.None);
             Assert.Equal(new[] { Message1, Message2, Message3 }, result2.Succeeded);
             Assert.Equal(new List<IMessage> { Message1, Message2, Message3 }, endpoint.Processed);

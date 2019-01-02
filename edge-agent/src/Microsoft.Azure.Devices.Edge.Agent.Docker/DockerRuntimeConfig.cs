@@ -4,7 +4,7 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using Microsoft.Azure.Devices.Edge.Util;
+
     using Newtonsoft.Json;
 
     public class DockerRuntimeConfig : IEquatable<DockerRuntimeConfig>
@@ -22,20 +22,24 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
             this.RegistryCredentials = registryCredentials?.ToImmutableDictionary() ?? ImmutableDictionary<string, RegistryCredentials>.Empty;
         }
 
-        [JsonProperty("minDockerVersion")]
-        public string MinDockerVersion { get; }
-
         [JsonProperty("loggingOptions")]
         public string LoggingOptions { get; }
 
+        [JsonProperty("minDockerVersion")]
+        public string MinDockerVersion { get; }
+
         [JsonProperty("registryCredentials")]
         public IDictionary<string, RegistryCredentials> RegistryCredentials { get; }
+
+        public static bool operator ==(DockerRuntimeConfig config1, DockerRuntimeConfig config2) => EqualityComparer<DockerRuntimeConfig>.Default.Equals(config1, config2);
+
+        public static bool operator !=(DockerRuntimeConfig config1, DockerRuntimeConfig config2) => !(config1 == config2);
 
         public override bool Equals(object obj) => this.Equals(obj as DockerRuntimeConfig);
 
         public bool Equals(DockerRuntimeConfig other) =>
             other != null && this.MinDockerVersion == other.MinDockerVersion && this.LoggingOptions == other.LoggingOptions &&
-            EqualityComparer<IDictionary<string, RegistryCredentials>>.Default.Equals(RegistryCredentials, other.RegistryCredentials);
+            EqualityComparer<IDictionary<string, RegistryCredentials>>.Default.Equals(this.RegistryCredentials, other.RegistryCredentials);
 
         public override int GetHashCode()
         {
@@ -45,9 +49,5 @@ namespace Microsoft.Azure.Devices.Edge.Agent.Docker
             hashCode = hashCode * -1521134295 + EqualityComparer<IDictionary<string, RegistryCredentials>>.Default.GetHashCode(this.RegistryCredentials);
             return hashCode;
         }
-
-        public static bool operator ==(DockerRuntimeConfig config1, DockerRuntimeConfig config2) => EqualityComparer<DockerRuntimeConfig>.Default.Equals(config1, config2);
-
-        public static bool operator !=(DockerRuntimeConfig config1, DockerRuntimeConfig config2) => !(config1 == config2);
     }
 }
